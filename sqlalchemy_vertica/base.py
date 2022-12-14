@@ -435,11 +435,16 @@ class VerticaDialect(default.DefaultDialect):
             SELECT column_name, data_type, column_default, is_nullable
             FROM v_catalog.columns
             WHERE lower(table_name) = '%(table)s'
-            AND %(schema_condition)s
+            AND  %(schema_condition)s
             UNION ALL
             SELECT column_name, data_type, '' as column_default, true as is_nullable
             FROM v_catalog.view_columns
             WHERE lower(table_name) = '%(table)s'
+            AND  %(schema_condition)s
+            UNION ALL
+            SELECT projection_column_name,data_type,'' as column_default, true as is_nullable
+            FROM PROJECTION_COLUMNS
+            WHERE lower(projection_name) = '%(table)s'
             AND %(schema_condition)s
         """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
 
