@@ -3,7 +3,7 @@
 from __future__ import annotations
 from __future__ import absolute_import, unicode_literals, print_function, division
 
-from typing import Any, Dict, Optional, List, Tuple,String
+from typing import Any, Dict, Optional, List, Tuple
 
 from sqlalchemy import exc
 from sqlalchemy import sql
@@ -330,8 +330,7 @@ class VerticaDialect(default.DefaultDialect):
     def get_table_comment(self, connection, table_name, schema=None, **kw):
 
         if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                'schema': schema.lower()}
+            schema_condition = "lower(table_schema) = '%(schema)s'" % {'schema': schema.lower()}
         else:
             schema_condition = "1"
 
@@ -366,6 +365,8 @@ class VerticaDialect(default.DefaultDialect):
                 TableSize = math.trunc(table_size['table_size'])
 
         return {"text": "This Vertica module is still is development Process", "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
+
+
 
     @reflection.cache
     def get_table_oid(self, connection, table_name, schema=None, **kw):
@@ -461,6 +462,7 @@ class VerticaDialect(default.DefaultDialect):
         c = connection.execute(get_views_sql)
         return [row[0] for row in c]
 
+    
     def get_view_definition(self, connection, view_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(table_schema) = '%(schema)s'" % {
@@ -505,6 +507,11 @@ class VerticaDialect(default.DefaultDialect):
             SELECT column_name, data_type, '' as column_default, true as is_nullable
             FROM v_catalog.view_columns
             WHERE lower(table_name) = '%(table)s'
+            AND %(schema_condition)s
+            UNION ALL
+            SELECT projection_column_name,data_type,'' as column_default, true as is_nullable
+            FROM PROJECTION_COLUMNS
+            WHERE lower(projection_name) = '%(table)s'
             AND %(schema_condition)s
         """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
 
@@ -606,6 +613,7 @@ class VerticaDialect(default.DefaultDialect):
     def visit_create_index(self, create):
         return None
 
+    
     def _get_column_info(  # noqa: C901
         self, name, data_type, default, is_nullable, schema=None
     ):
@@ -669,8 +677,7 @@ class VerticaDialect(default.DefaultDialect):
         if coltype:
             coltype = coltype(*args, **kwargs)
         else:
-            util.warn("Did not recognize type '%s' of column '%s'" %
-                      (attype, name))
+            util.warn("Did not recognize type '%s' of column '%s'" % (attype, name))
             coltype = sqltypes.NULLTYPE
         # adjust the default value
         autoincrement = False
@@ -702,6 +709,7 @@ class VerticaDialect(default.DefaultDialect):
         )
         return column_info
 
+    @reflection.cache
     def get_models_names(self, connection, schema=None, **kw):
 
         if schema is not None:
@@ -743,23 +751,29 @@ class VerticaDialect(default.DefaultDialect):
             pk_columns.append(columns)
 
         return {'constrained_columns': pk_columns, 'name': pk_columns}
+    
 
-    def _get_properties_keys(self, connection, db_name, schema, level=None) -> dict:
+    def _get_properties_keys(self, connection, db_name, schema, level=None):
         try:
             properties_keys = dict()
             if level == "schema":
+             
                 properties_keys = self._get_schema_keys(
-                    self, connection, db_name, schema)
+                    connection, db_name, schema)
             if level == "database":
+               
                 properties_keys = self._get_database_keys(
-                    self, connection, db_name)
+                    connection, db_name)
+          
             return properties_keys
         except Exception as e:
+            import traceback
+            traceback.print_exe()
             print("Error in finding schema keys in vertica ")
 
-    def _get_schema_keys(self, connection, db_name, schema) -> dict:
+    def _get_schema_keys(self, connection, db_name, schema):
         try:
-
+            
             if schema is not None:
                 schema_condition = "lower(table_schema) = '%(schema)s'" % {
                     'schema': schema.lower()}
@@ -805,10 +819,11 @@ class VerticaDialect(default.DefaultDialect):
 
         except Exception as e:
             print("Exception in _get_schema_keys from vertica ")
+            
 
-    def _get_database_keys(self, connection, db_name) -> dict:
+    def _get_database_keys(self, connection, db_name):
         try:
-
+            print("")
             # Query for CLUSTER TYPE
             cluster_type_qry = sql.text(dedent("""
                 SELECT 
@@ -857,7 +872,8 @@ class VerticaDialect(default.DefaultDialect):
 
         except Exception as e:
             print("Exception in _get_database_keys")
-
+            
+    # @reflection.cache
     def _get_extra_tags(
         self, connection, name, schema=None
     ) -> Optional[Dict[str, str]]:
@@ -898,7 +914,9 @@ class VerticaDialect(default.DefaultDialect):
         for each in owner_res:
             final_tags[each['table_name']] = each['owner_name']
         return final_tags
-
+    
+    
+    @reflection.cache
     def get_projection_comment(self, connection, projection_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(projection_schema) = '%(schema)s'" % {
@@ -1006,7 +1024,8 @@ class VerticaDialect(default.DefaultDialect):
                                "Segmentation_key": segmentation_key,
                                "Projection SIze": str(projection_size) + " KB",
                                "Projection Cached": str(cached_projection)}}
-
+        
+    @reflection.cache
     def get_model_comment(self, connection, model_name, schema=None, **kw):
 
         if schema is not None:
@@ -1075,7 +1094,8 @@ class VerticaDialect(default.DefaultDialect):
 
         return {"text": "This Vertica module is still is development Process", "properties": {"used_by": str(used_by),
                 "Model Attrributes ": str(attr_name), "Model Specifications": str(attributes_details)}}
-
+        
+    @reflection.cache
     def get_oauth_comment(self, connection, model_name, schema=None, **kw):
 
         get_oauth_comments = sql.text(dedent("""
@@ -1117,3 +1137,5 @@ class VerticaDialect(default.DefaultDialect):
         return {"text": "This Vertica module is still is development Process", "properties": {"discovery_url ": str(discovery_url),
                 "client_id  ": str(client_id), "introspect_url ": str(introspect_url), "auth_oid ": str(auth_oid), "client_secret ": str(client_secret),
                 "is_auth_enabled": str(is_auth_enabled), "auth_priority ": str(auth_priority), "address_priority ": str(address_priority), "is_fallthrough_enabled": str(is_fallthrough_enabled), }}
+
+    

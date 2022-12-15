@@ -3,7 +3,7 @@ from setuptools import setup
 with open("README.rst", "r") as f:
     description = f.read()
 
-version_info = (0, 0, 7)
+version_info = (0, 1, 0)
 version = '.'.join(map(str, version_info))
 
 setup(
@@ -21,7 +21,7 @@ setup(
     ),
     install_requires=(
         'six >= 1.10.0',
-        'sqlalchemy >= 1.1.11',
+        'sqlalchemy >= 1.4.44',
         'vertica-python>=1.1.1'
     ),
     extras_require={
