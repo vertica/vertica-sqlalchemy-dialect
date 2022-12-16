@@ -72,27 +72,22 @@ class UUID(String):
     
 class TIMESTAMP_WITH_PRECISION(TIMESTAMP):
     """The SQL TIMESTAMP With Precision type.
-
     Since Vertica supports precision values for timestamp this allows ingestion
     of timestamp fields with precision values.
     PS: THIS DATA IS CURRENTLY UNUSED, IT JUST FIXES INGESTION PROBLEMS
     TODO: Should research the possibility of reflecting the precision in the schema
-
     """
 
     __visit_name__ = "TIMESTAMP"
 
     def __init__(self, timezone=False, precision=None):
         """Construct a new :class:`_types.TIMESTAMP_WITH_PRECISION`.
-
         :param timezone: boolean.  Indicates that the TIMESTAMP type should
          enable timezone support, if available on the target database.
          On a per-dialect basis is similar to "TIMESTAMP WITH TIMEZONE".
          If the target database does not support timezones, this flag is
          ignored.
         :param precision: integer.  Indicates the PRECISION field when provided
-
-
         """
         super(TIMESTAMP, self).__init__(timezone=timezone)
         self.precision = precision
@@ -645,8 +640,8 @@ class VerticaDialect(default.DefaultDialect):
             args = ()  # type: ignore
         elif attype in ("timestamp", "time"):
             kwargs["timezone"] = False
-            if charlen:
-                kwargs["precision"] = int(charlen)  # type: ignore
+            # if charlen:
+            #     kwargs["precision"] = int(charlen)  # type: ignore
             args = ()  # type: ignore
         elif attype.startswith("interval"):
             field_match = re.match(r"interval (.+)", attype, re.I)
@@ -729,6 +724,18 @@ class VerticaDialect(default.DefaultDialect):
 
         return [row[0] for row in c]
 
+    def get_Oauth_names(self, connection, schema=None, **kw):
+
+    
+        get_oauth_sql = sql.text(dedent("""
+            SELECT auth_name from v_catalog.client_auth
+            WHERE auth_method = 'OAUTH'
+        """ % {'schema': schema}))
+        print("auth connection", schema)
+        c = connection.execute(get_oauth_sql)
+        
+        return [row[0] for row in c]
+    
     def get_pk_constraint(self, connection, table_name, schema: None, **kw):
         if schema is not None:
             schema_condition = "lower(table_schema) = '%(schema)s'" % {
