@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 from __future__ import absolute_import, unicode_literals, print_function, division
 
@@ -366,8 +364,6 @@ class VerticaDialect(default.DefaultDialect):
 
         return {"text": "This Vertica module is still is development Process", "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
 
-
-
     @reflection.cache
     def get_table_oid(self, connection, table_name, schema=None, **kw):
         if schema is None:
@@ -461,8 +457,7 @@ class VerticaDialect(default.DefaultDialect):
 
         c = connection.execute(get_views_sql)
         return [row[0] for row in c]
-
-    
+ 
     def get_view_definition(self, connection, view_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(table_schema) = '%(schema)s'" % {
@@ -612,7 +607,6 @@ class VerticaDialect(default.DefaultDialect):
     # noinspection PyUnusedLocal
     def visit_create_index(self, create):
         return None
-
     
     def _get_column_info(  # noqa: C901
         self, name, data_type, default, is_nullable, schema=None
@@ -751,7 +745,6 @@ class VerticaDialect(default.DefaultDialect):
             pk_columns.append(columns)
 
         return {'constrained_columns': pk_columns, 'name': pk_columns}
-    
 
     def _get_properties_keys(self, connection, db_name, schema, level=None):
         try:
@@ -820,7 +813,6 @@ class VerticaDialect(default.DefaultDialect):
         except Exception as e:
             print("Exception in _get_schema_keys from vertica ")
             
-
     def _get_database_keys(self, connection, db_name):
         try:
             print("")
@@ -914,8 +906,7 @@ class VerticaDialect(default.DefaultDialect):
         for each in owner_res:
             final_tags[each['table_name']] = each['owner_name']
         return final_tags
-    
-    
+       
     @reflection.cache
     def get_projection_comment(self, connection, projection_name, schema=None, **kw):
         if schema is not None:

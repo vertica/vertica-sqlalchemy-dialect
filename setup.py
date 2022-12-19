@@ -7,15 +7,14 @@ version_info = (0, 1, 0)
 version = '.'.join(map(str, version_info))
 
 setup(
-    name='sqlalchemy-vertica-dialect',
+    name='sqlalchemy_vertica',
     version=version,
     description='Vertica dialect for sqlalchemy',
     long_description=description,
     license='MIT',
     url='https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect.git',
     download_url='https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect.git/tarball/%s' % (version,),
-    author='Vishal Kumar',
-    author_email='vishal.kr5896@gmail.com',
+    author='Narendra Prabhu',
     packages=(
         'sqlalchemy_vertica',
     ),
