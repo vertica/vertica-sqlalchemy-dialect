@@ -3,7 +3,7 @@ from setuptools import setup
 with open("README.rst", "r") as f:
     description = f.read()
 
-version_info = (0, 1, 0)
+version_info = (0, 1, 2)
 version = '.'.join(map(str, version_info))
 
 setup(

@@ -303,7 +303,7 @@ class VerticaDialect(default.DefaultDialect):
         c = connection.execute(has_seq_sql)
         return bool(c.scalar())
 
-    def has_type(self, connection, type_name, schema=None):
+    def has_type(self, connection, type_name):
         has_type_sql = sql.text(dedent("""
             SELECT EXISTS (
             SELECT type_name
@@ -387,6 +387,7 @@ class VerticaDialect(default.DefaultDialect):
         return table_oid
 
     def get_projection_names(self, connection, schema=None, **kw):
+        # TODO Clean schema_condition code
         if schema is not None:
             schema_condition = "lower(projection_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
@@ -481,6 +482,7 @@ class VerticaDialect(default.DefaultDialect):
 
         return view_def
 
+    # Vertica does not support global temporary views. 
     @reflection.cache
     def get_temp_view_names(self, connection, schema=None, **kw):
         return []
@@ -538,20 +540,23 @@ class VerticaDialect(default.DefaultDialect):
             columns.append(column_info)
         return columns
 
+    # TODO this function doesnt seem to work even though the query is right
     @reflection.cache
     def get_unique_constraints(self, connection, table_name, schema=None, **kw):
         if schema is None:
             schema = self._get_default_schema_name(connection)
 
-        get_constrains_sql = sql.text(dedent("""
-            SELECT constraint_name, column_name
-            FROM v_catalog.constraint_columns
-            WHERE lower(table_name) = '%(table)s'
-            -- AND constraint_type IN ('p', 'u')
-            AND lower(table_schema) = '%(schema)s'
-        """ % {'schema': schema.lower(), 'table': table_name.lower()}))
-
-        c = connection.execute(get_constrains_sql)
+        get_constraints_sql = sql.text(
+                dedent(
+                    """
+                    SELECT constraint_name, column_name
+                    FROM v_catalog.constraint_columns
+                    WHERE table_name = '%(table)s' AND table_schema = '%(schema)s'
+                    """
+                    % {"schema": schema, "table": table_name}
+                )
+            )
+        c = connection.execute(get_constraints_sql)
         if c.rowcount <= 0:
             return []
 
@@ -565,10 +570,8 @@ class VerticaDialect(default.DefaultDialect):
         return [{"name": name, "column_names": cols} for name, cols in result_dict.items()]
 
     @reflection.cache
-    def get_check_constraints(
-            self, connection, table_name, schema=None, **kw):
-        table_oid = self.get_table_oid(connection, table_name, schema,
-                                       info_cache=kw.get('info_cache'))
+    def get_check_constraints(self, connection, table_name, schema=None, **kw):
+        table_oid = self.get_table_oid(connection, table_name, schema, info_cache=kw.get('info_cache'))
 
         constraints_sql = sql.text(dedent("""
             SELECT constraint_name, column_name
@@ -595,10 +598,12 @@ class VerticaDialect(default.DefaultDialect):
     def get_pk_constraint(self, bind, table_name, schema=None, **kw):
         return {'constrained_columns': [], 'name': 'undefined'}
 
+    # TODO complete the foreign keys function
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
         return []
 
+    # TODO complete the foreign keys function
     @reflection.cache
     def get_indexes(self, connection, table_name, schema, **kw):
         return []
@@ -705,7 +710,7 @@ class VerticaDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_models_names(self, connection, schema=None, **kw):
-
+        # TODO Clean the code for schema_condition
         if schema is not None:
             schema_condition = "lower(schema_name) = '%(schema)s'" % {
                 'schema': schema.lower()}
