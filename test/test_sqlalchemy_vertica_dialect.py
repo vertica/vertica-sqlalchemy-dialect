@@ -50,6 +50,10 @@ sample_pk = {"C_PRIMARY":"customer_key"}
 
 sample_model_list = ["naive_house84_model"]
 
+sample_tags = {"sampletemp": "dbadmin", "employee_dimension": "dbadmin", "clicks": "dbadmin"}
+
+sample_ml_model = "naive_house84_model"
+
 @pytest.fixture
 def vpyconn():
     engine = sa.create_engine('vertica+vertica_python://dbadmin:abc123@localhost:5433/vmart')
@@ -218,5 +222,46 @@ def test_get_column_info(vpyconn):
 
 def test_get_models_names(vpyconn):
     res = vpyconn[0].dialect.get_models_names(vpyconn[1], schema="public")
+    # Assert model names
     assert all(value in sample_model_list for value in res)
+
+def test_get_properties_keys(vpyconn):
+    db_keys = vpyconn[0].dialect._get_properties_keys(vpyconn[1], db_name="vmart", schema="public", level="database")
+    sc_keys = vpyconn[0].dialect._get_properties_keys(vpyconn[1], db_name="vmart", schema="public", level="schema")
+    # Assert the schema level properties
+    assert sc_keys["projection_count"] > 0
+    assert len(sc_keys["udx_list"]) > 0
+    assert len(sc_keys["udx_language"]) > 0
+    # Assert the database level properties
+    gb = re.compile(r'[0-9]+ GB')
+    assert db_keys["cluster_type"] == "Enterprise"
+    assert bool(gb.match(db_keys["cluster_size"]))
+    assert db_keys["subcluster"] == ' '
+    assert len(db_keys["communal_storage_path"])==0
+
+def test_get_extra_tags(vpyconn):
+    extra_tags = vpyconn[0].dialect._get_extra_tags(vpyconn[1], name="table", schema="public")
+    assert len(extra_tags)==42
+    assert all(value in extra_tags for value in sample_tags)
+
+def test_get_ros_count(vpyconn):
+    rc = vpyconn[0].dialect._get_ros_count(vpyconn[1], projection_name="employee_dimension_super", name="table", schema="public")
+    assert rc>0
+
+def test_get_model_comment(vpyconn):
+    mc = vpyconn[0].dialect.get_model_comment(vpyconn[1], model_name=sample_ml_model, schema="public")
+    assert mc["properties"]["used_by"] == "dbadmin"
+    assert len(mc["properties"]["Model Attributes"])>0
+    assert len(mc["properties"]["Model Specifications"])>0
+
+def test_get_oauth_comment(vpyconn):
+    oc = vpyconn[0].dialect.get_oauth_comment(vpyconn[1])
+    assert oc["properties"]["client_id"] == "vertica"
+    h = re.compile(r'http://|https://')
+    assert len(oc["properties"]["introspect_url"])>0
+    assert bool(h.match(oc["properties"]["introspect_url"]))
+    assert len(oc["properties"]["discovery_url"])>0
+    assert bool(h.match(oc["properties"]["discovery_url"]))
+    assert len(oc["properties"]["is_fallthrough_enabled"])>0
+
 

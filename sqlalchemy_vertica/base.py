@@ -242,6 +242,8 @@ class VerticaDialect(default.DefaultDialect):
     def initialize(self, connection):
         super().initialize(connection)
 
+    """ Generic functions """
+
     def _get_default_schema_name(self, connection):
         return connection.scalar("SELECT current_schema()")
 
@@ -362,7 +364,7 @@ class VerticaDialect(default.DefaultDialect):
             else:
                 TableSize = math.trunc(table_size['table_size'])
 
-        return {"text": "This Vertica module is still is development Process", "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
+        return {"text": "This Vertica module is still under development", "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
 
     @reflection.cache
     def get_table_oid(self, connection, table_name, schema=None, **kw):
@@ -708,6 +710,7 @@ class VerticaDialect(default.DefaultDialect):
         )
         return column_info
 
+    """ Database/Schema level functions """
     @reflection.cache
     def get_models_names(self, connection, schema=None, **kw):
         # TODO Clean the code for schema_condition
@@ -813,7 +816,7 @@ class VerticaDialect(default.DefaultDialect):
                 user_defined_library += f"{data['lib_name']} -- {data['description']} |  "
 
             return {"projection_count": projection_count,
-                    'udx_list': udx_list, 'Udx_langauge': user_defined_library}
+                    'udx_list': udx_list, 'udx_language': user_defined_library}
 
         except Exception as e:
             print("Exception in _get_schema_keys from vertica ")
@@ -838,13 +841,13 @@ class VerticaDialect(default.DefaultDialect):
             """))
 
             cluster_type = ""
-            communical_path = ""
+            communal_path = ""
             cluster_type_res = connection.execute(cluster_type_qry)
             for each in cluster_type_res:
                 cluster_type = each.database_mode
                 if cluster_type.lower() == 'eon':
                     for each in connection.execute(communal_storage_path):
-                        communical_path += str(each.location_path) + " | "
+                        communal_path += str(each.location_path) + " | "
 
             SUBCLUSTER_SIZE = sql.text(dedent("""
                             SELECT subclusters.subcluster_name , CAST(sum(disk_space_used_mb // 1024) as varchar(10)) as subclustersize from subclusters  
@@ -864,8 +867,8 @@ class VerticaDialect(default.DefaultDialect):
             for each in connection.execute(cluster__size):
                 cluster_size = str(each.cluster_size) + " GB"
 
-            return {"cluster_type": cluster_type, "cluster_size": cluster_size, 'Subcluster': subclusters,
-                    "communinal_storage_path": communical_path}
+            return {"cluster_type": cluster_type, "cluster_size": cluster_size, 'subcluster': subclusters,
+                    "communal_storage_path": communal_path}
 
         except Exception as e:
             print("Exception in _get_database_keys")
@@ -911,9 +914,8 @@ class VerticaDialect(default.DefaultDialect):
         for each in owner_res:
             final_tags[each['table_name']] = each['owner_name']
         return final_tags
-       
-    @reflection.cache
-    def get_projection_comment(self, connection, projection_name, schema=None, **kw):
+
+    def _get_ros_count(self, connection, projection_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(projection_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
@@ -926,6 +928,19 @@ class VerticaDialect(default.DefaultDialect):
                 WHERE lower(projection_name) = '%(table)s'
 
             """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
+
+        for data in connection.execute(src):
+            ros_count = data['ros_count']
+        
+        return ros_count
+
+    @reflection.cache
+    def get_projection_comment(self, connection, projection_name, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(projection_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
 
         sig = sql.text(dedent("""
                 SELECT is_segmented 
@@ -985,9 +1000,6 @@ class VerticaDialect(default.DefaultDialect):
                 for data in connection.execute(ssk):
                     segmentation_key = str(data)
 
-        for data in connection.execute(src):
-            ros_count = data['ros_count']
-
         for data in connection.execute(spk):
             partition_key = data['partition_key']
 
@@ -1013,8 +1025,8 @@ class VerticaDialect(default.DefaultDialect):
             else:
                 cached_projection = "False"
 
-        return {"text": "This Vertica module is still is development Process for Projections",
-                "properties": {"ROS Count": str(ros_count), "is_segmented": str(is_segmented),
+        return {"text": "This Vertica module is still under development for Projections",
+                "properties": {"ROS Count": str(self._get_ros_count(connection, projection_name, schema=None)), "is_segmented": str(is_segmented),
                                "Projection Type": str(projection_type), "Partition Key": str(partition_key),
                                "Number of Partition": str(partition_number),
                                "Segmentation_key": segmentation_key,
@@ -1088,17 +1100,23 @@ class VerticaDialect(default.DefaultDialect):
             attr_details_dict.update(value_final)
             attributes_details.append(attr_details_dict)
 
-        return {"text": "This Vertica module is still is development Process", "properties": {"used_by": str(used_by),
-                "Model Attrributes ": str(attr_name), "Model Specifications": str(attributes_details)}}
+        return {"text": "This Vertica module is still under development", "properties": {"used_by": str(used_by),
+                "Model Attributes": str(attr_name), "Model Specifications": str(attributes_details)}}
         
     @reflection.cache
-    def get_oauth_comment(self, connection, model_name, schema=None, **kw):
+    def get_oauth_comment(self, connection, **kw):
 
-        get_oauth_comments = sql.text(dedent("""
-                            SELECT auth_oid ,is_auth_enabled, is_fallthrough_enabled,auth_parameters ,auth_priority ,address_priority from v_catalog.client_auth
-                                WHERE auth_method = 'OAUTH'
-
-                                """))
+        get_oauth_comments = \
+            sql.text(dedent("""
+                SELECT auth_oid,
+                is_auth_enabled, 
+                is_fallthrough_enabled,
+                auth_parameters, 
+                auth_priority, 
+                address_priority 
+                from v_catalog.client_auth
+                WHERE auth_method = 'OAUTH'
+            """))
         client_id = ""
         client_secret = ""
         for data in connection.execute(get_oauth_comments):
@@ -1130,8 +1148,8 @@ class VerticaDialect(default.DefaultDialect):
             address_priority = data['address_priority']
             is_fallthrough_enabled = data['is_fallthrough_enabled']
 
-        return {"text": "This Vertica module is still is development Process", "properties": {"discovery_url ": str(discovery_url),
-                "client_id  ": str(client_id), "introspect_url ": str(introspect_url), "auth_oid ": str(auth_oid), "client_secret ": str(client_secret),
-                "is_auth_enabled": str(is_auth_enabled), "auth_priority ": str(auth_priority), "address_priority ": str(address_priority), "is_fallthrough_enabled": str(is_fallthrough_enabled), }}
+        return {"text": "This Vertica module is still under development", "properties": {"discovery_url": str(discovery_url),
+                "client_id": str(client_id), "introspect_url": str(introspect_url), "auth_oid ": str(auth_oid), "client_secret": str(client_secret),
+                "is_auth_enabled": str(is_auth_enabled), "auth_priority": str(auth_priority), "address_priority": str(address_priority), "is_fallthrough_enabled": str(is_fallthrough_enabled), }}
 
     

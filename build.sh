@@ -37,6 +37,9 @@ ALTER AUTHENTICATION v_oauth SET client_id = 'vertica';
 ALTER AUTHENTICATION v_oauth SET client_secret = 'avdhqh1234139uhbicabqwsxiudb12uew1o2nn1i2j';
 ALTER AUTHENTICATION v_oauth SET discovery_url = 'https://203.0.113.1:8443/realms/myrealm/.well-known/openid-configuration';
 ALTER AUTHENTICATION v_oauth SET introspect_url = 'https://203.0.113.1:8443/realms/myrealm/protocol/openid-connect/token/introspect';
+CREATE USER oauth_user;
+GRANT AUTHENTICATION v_oauth TO oauth_user;
+GRANT ALL ON SCHEMA PUBLIC TO oauth_user;
 EOF
 
 # Create a View
