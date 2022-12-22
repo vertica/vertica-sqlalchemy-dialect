@@ -1,0 +1,57 @@
+name: Build VerticaDB Image
+
+on:
+  push:
+    branches:
+     - test-suite
+  pull_request:
+    branches:
+     - test-suite
+
+ strategy:
+    matrix:
+      python-version: ['2.7', '3.7', '3.8', '3.9', '3.10', '3.11', 'pypy3.9']
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up a VerticaDB server
+        timeout-minutes: 15
+        run: |
+          docker run -d -p 5433:5433 -p 5444:5444 \
+            --name vertica_docker \
+            vertica/vertica-ce:12.0.2-0
+          echo "Vertica startup ..."
+          until docker exec vertica_docker test -f /data/vertica/VMart/agent_start.out; do \
+            echo "..."; \
+            sleep 3; \
+          done;
+          echo "Vertica is up"
+          docker exec -u dbadmin vertica_docker /opt/vertica/bin/vsql -c "\l"
+          docker exec -u dbadmin vertica_docker /opt/vertica/bin/vsql -c "select version()"
+      - name: Add necessary schema into VerticaDB
+        timeout-minutes: 15
+        run: |
+          docker cp ddl.sql vertica_docker:/home/dbadmin/
+          docker exec -it vertica_docker sh -c "/opt/vertica/bin/vsql -w 'abc123' -f /home/dbadmin/ddl.sql"
+          docker exec -it vertica_docker sh -c "sudo git clone https://github.com/vertica/Machine-Learning-Examples"
+          docker exec -it vertica_docker sh -c "sudo chmod a+rwx -R Machine-Learning-Examples"
+          docker exec -it vertica_docker sh -c "sudo chown dbadmin:verticadba -R Machine-Learning-Examples"
+          docker exec -it vertica_docker sh -c "/opt/vertica/bin/vsql -f /home/dbadmin/Machine-Learning-Examples/data/load_ml_data.sql"
+          docker exec -it vertica_docker sh -c "vsql -f /home/dbadmin/Machine-Learning-Examples/naive_bayes/naive_bayes_data_preparation.sql"
+          docker exec -it vertica_docker sh -c "vsql -f /home/dbadmin/Machine-Learning-Examples/naive_bayes/naivebayes_examples.sql"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m venv venv
+          source venv/bin/activate
+          /usr/bin/python -m pip install -U pytest
+          pip install pyodbc
+          python setup.py install
+      - name: Run tests
+        # This step references the directory that contains the action.
+        uses: ./.github/actions/run-unit-test

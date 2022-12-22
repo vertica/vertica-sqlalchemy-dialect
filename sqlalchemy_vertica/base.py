@@ -873,7 +873,7 @@ class VerticaDialect(default.DefaultDialect):
         except Exception as e:
             print("Exception in _get_database_keys")
             
-    # @reflection.cache
+    """ Datahub specific functions """
     def _get_extra_tags(
         self, connection, name, schema=None
     ) -> Optional[Dict[str, str]]:
