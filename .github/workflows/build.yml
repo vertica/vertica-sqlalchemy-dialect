@@ -48,10 +48,10 @@ jobs:
           docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples/data && /opt/vertica/bin/vsql -w 'abc123' -f ./naive_bayes/naivebayes_examples.sql"
       - name: Install dependencies
         run: |
+          python -m ensurepip --upgrade
           python -m venv venv
           source venv/bin/activate
-          python -m pip install --upgrade pip setuptools wheel 
-          pip install pyodbc SQLAlchemy pytest
+          python -m pip install --upgrade pip setuptools wheel pytest pyodbc sqlalchemy
           python setup.py install
       - name: Run tests
         # This step references the directory that contains the action.
