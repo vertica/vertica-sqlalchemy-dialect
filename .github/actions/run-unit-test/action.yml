@@ -4,5 +4,7 @@ runs:
   using: "composite"
   steps:
     - name: Run tests
+      shell: bash
       run: |
+        echo "Running unit tests.."
         pytest -v
