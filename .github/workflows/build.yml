@@ -39,6 +39,7 @@ jobs:
         run: |
           docker cp ddl.sql vertica_docker:/home/dbadmin/
           docker exec vertica_docker sh -c "/opt/vertica/bin/vsql -w 'abc123' -f /home/dbadmin/ddl.sql"
+          docker exec vertica_docker sh -c "sudo yum install git"
           docker exec vertica_docker sh -c "sudo git clone https://github.com/vertica/Machine-Learning-Examples"
           docker exec vertica_docker sh -c "sudo chmod a+rwx -R Machine-Learning-Examples"
           docker exec vertica_docker sh -c "sudo chown dbadmin:verticadba -R Machine-Learning-Examples"
