@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['2.7', '3.11']
+        python-version: ['3.11']
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -48,10 +48,9 @@ jobs:
           docker exec vertica_docker sh -c "/opt/vertica/bin/vsql -f /home/dbadmin/Machine-Learning-Examples/naive_bayes/naivebayes_examples.sql"
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade pip setuptools wheel pytest
           python -m venv venv
           source venv/bin/activate
-          /usr/bin/python -m pip install -U pytest
           pip install pyodbc
           python setup.py install
       - name: Run tests
