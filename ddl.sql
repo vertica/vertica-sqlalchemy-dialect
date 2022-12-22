@@ -5,7 +5,7 @@ CREATE PROJECTION readings_topk (meter_id, recent_date, recent_value) AS SELECT 
 
 -- Create a live agg projs
 CREATE TABLE clicks(user_id IDENTITY(1,1), page_id INTEGER, click_time TIMESTAMP NOT NULL);
-CREATE PROJECTION clicks_agg AS SELECT page_id, click_time::DATE click_date, COUNT(*) num_clicks FROM clicks GROUP BY page_id, click_time::DATE 
+CREATE PROJECTION clicks_agg AS SELECT page_id, click_time::DATE click_date, COUNT(*) num_clicks FROM clicks GROUP BY page_id, click_time::DATE;
 
 -- Create a Oauth config
 CREATE AUTHENTICATION v_oauth METHOD 'oauth' HOST '0.0.0.0/0';
