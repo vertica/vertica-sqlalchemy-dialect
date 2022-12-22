@@ -24,6 +24,7 @@ jobs:
         timeout-minutes: 15
         run: |
           docker run -d -p 5433:5433 -p 5444:5444 \
+            -e APP_DB_PASSWORD='abc123' \
             --name vertica_docker \
             vertica/vertica-ce:12.0.2-0
           echo "Vertica startup ..."
