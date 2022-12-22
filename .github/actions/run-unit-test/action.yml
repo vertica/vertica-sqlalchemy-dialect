@@ -7,4 +7,5 @@ runs:
       shell: bash
       run: |
         echo "Running unit tests.."
+        source venv/bin/activate
         pytest -v
