@@ -1,4 +1,6 @@
 \set AUTOCOMMIT on
+ALTER USER dbadmin IDENTIFIED BY 'abc123';
+
 -- Create a Top-k projection
 CREATE TABLE readings (meter_id INT, reading_date TIMESTAMP, reading_value FLOAT);
 CREATE PROJECTION readings_topk (meter_id, recent_date, recent_value) AS SELECT meter_id, reading_date, reading_value FROM readings LIMIT 5 OVER (PARTITION BY meter_id ORDER BY reading_date DESC);

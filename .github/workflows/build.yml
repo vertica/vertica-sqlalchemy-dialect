@@ -24,7 +24,6 @@ jobs:
         timeout-minutes: 15
         run: |
           docker run -d -p 5433:5433 -p 5444:5444 \
-            -e APP_DB_PASSWORD='abc123' \
             --name vertica_docker \
             vertica/vertica-ce:12.0.2-0
           echo "Vertica startup ..."
@@ -48,13 +47,7 @@ jobs:
           /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naive_bayes_data_preparation.sql &&
           /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naivebayes_examples.sql
           "
-        # docker exec vertica_docker sh -c "sudo yum install git -y"
-        # docker exec vertica_docker sh -c "cd /opt && sudo git clone https://github.com/vertica/Machine-Learning-Examples"
-        # docker exec vertica_docker sh -c "sudo chmod -R a+rwx /opt/Machine-Learning-Examples"
-        # docker exec vertica_docker sh -c "sudo chown -R dbadmin:verticadba /opt/Machine-Learning-Examples"
-        # docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples/data && /opt/vertica/bin/vsql -w 'abc123' -f load_ml_data.sql"
-        # docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples && /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naive_bayes_data_preparation.sql"
-        # docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples && /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naivebayes_examples.sql"
+          docker exec -u dbadmin vertica_docker /opt/vertica/bin/vsql -c "select version()"
       - name: Install dependencies
         run: |
           python -m ensurepip --upgrade
