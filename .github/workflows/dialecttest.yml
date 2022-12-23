@@ -7,6 +7,10 @@ on:
   pull_request:
     branches:
      - test-suite
+
+env:
+  DB_PWD: 'abc123'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -38,15 +42,15 @@ jobs:
         timeout-minutes: 15
         run: |
           docker cp ddl.sql vertica_docker:/home/dbadmin/
-          docker exec vertica_docker sh -c "/opt/vertica/bin/vsql -w 'abc123' -f /home/dbadmin/ddl.sql &&
+          docker exec vertica_docker sh -c "/opt/vertica/bin/vsql -w $DB_PWD -f /home/dbadmin/ddl.sql &&
           sudo yum install git -y &&
           cd /opt && sudo git clone https://github.com/vertica/Machine-Learning-Examples &&
           sudo chmod -R a+rwx /opt/Machine-Learning-Examples &&
-          cd /opt/Machine-Learning-Examples/data && /opt/vertica/bin/vsql -w 'abc123' -f load_ml_data.sql &&
+          cd /opt/Machine-Learning-Examples/data && /opt/vertica/bin/vsql -w $DB_PWD -f load_ml_data.sql &&
           cd .. &&
-          /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naive_bayes_data_preparation.sql &&
-          /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naivebayes_examples.sql &&
-          /opt/vertica/bin/vsql -w 'abc123' -c 'select count(*) from v_catalog.tables'
+          /opt/vertica/bin/vsql -w $DB_PWD -f naive_bayes/naive_bayes_data_preparation.sql &&
+          /opt/vertica/bin/vsql -w $DB_PWD -f naive_bayes/naivebayes_examples.sql &&
+          /opt/vertica/bin/vsql -w $DB_PWD -c 'select count(*) from v_catalog.tables'
           "
       - name: Install dependencies
         run: |
