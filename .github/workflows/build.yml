@@ -1,4 +1,4 @@
-name: Build VerticaDB Image
+name: Test Vertica-SQLALchemy dialect
 
 on:
   push:
@@ -39,14 +39,22 @@ jobs:
         timeout-minutes: 15
         run: |
           docker cp ddl.sql vertica_docker:/home/dbadmin/
-          docker exec vertica_docker sh -c "/opt/vertica/bin/vsql -w 'abc123' -f /home/dbadmin/ddl.sql"
-          docker exec vertica_docker sh -c "sudo yum install git -y"
-          docker exec vertica_docker sh -c "cd /opt && sudo git clone https://github.com/vertica/Machine-Learning-Examples"
-          docker exec vertica_docker sh -c "sudo chmod -R a+rwx /opt/Machine-Learning-Examples"
-          docker exec vertica_docker sh -c "sudo chown -R dbadmin:verticadba /opt/Machine-Learning-Examples"
-          docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples/data && /opt/vertica/bin/vsql -w 'abc123' -f load_ml_data.sql"
-          docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples && /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naive_bayes_data_preparation.sql"
-          docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples && /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naivebayes_examples.sql"
+          docker exec vertica_docker sh -c "/opt/vertica/bin/vsql -w 'abc123' -f /home/dbadmin/ddl.sql &&
+          sudo yum install git -y &&
+          cd /opt && sudo git clone https://github.com/vertica/Machine-Learning-Examples &&
+          sudo chmod -R a+rwx /opt/Machine-Learning-Examples &&
+          cd /opt/Machine-Learning-Examples/data && /opt/vertica/bin/vsql -w 'abc123' -f load_ml_data.sql &&
+          cd .. &&
+          /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naive_bayes_data_preparation.sql &&
+          /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naivebayes_examples.sql
+          "
+        # docker exec vertica_docker sh -c "sudo yum install git -y"
+        # docker exec vertica_docker sh -c "cd /opt && sudo git clone https://github.com/vertica/Machine-Learning-Examples"
+        # docker exec vertica_docker sh -c "sudo chmod -R a+rwx /opt/Machine-Learning-Examples"
+        # docker exec vertica_docker sh -c "sudo chown -R dbadmin:verticadba /opt/Machine-Learning-Examples"
+        # docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples/data && /opt/vertica/bin/vsql -w 'abc123' -f load_ml_data.sql"
+        # docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples && /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naive_bayes_data_preparation.sql"
+        # docker exec vertica_docker sh -c "cd /opt/Machine-Learning-Examples && /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naivebayes_examples.sql"
       - name: Install dependencies
         run: |
           python -m ensurepip --upgrade
@@ -58,4 +66,5 @@ jobs:
         # This step references the directory that contains the action.
         #uses: ./.github/actions/run-unit-test
         run: |
+          source venv/bin/activate
           python validate.py
