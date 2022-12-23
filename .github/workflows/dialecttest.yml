@@ -3,10 +3,10 @@ name: Test Vertica-SQLALchemy dialect
 on:
   push:
     branches:
-     - main
+     - test-suite
   pull_request:
     branches:
-     - main
+     - test-suite
 
 env:
   DB_PWD: $DB_PWD
