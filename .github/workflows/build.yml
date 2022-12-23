@@ -45,9 +45,9 @@ jobs:
           cd /opt/Machine-Learning-Examples/data && /opt/vertica/bin/vsql -w 'abc123' -f load_ml_data.sql &&
           cd .. &&
           /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naive_bayes_data_preparation.sql &&
-          /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naivebayes_examples.sql
+          /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naivebayes_examples.sql &&
+          /opt/vertica/bin/vsql -w 'abc123' -c 'select count(*) from v_catalog.tables'
           "
-          docker exec -u dbadmin vertica_docker /opt/vertica/bin/vsql -c "select version()"
       - name: Install dependencies
         run: |
           python -m ensurepip --upgrade
