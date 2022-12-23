@@ -54,7 +54,7 @@ sample_tags = {"sampletemp": "dbadmin", "employee_dimension": "dbadmin", "clicks
 
 sample_ml_model = "naive_house84_model"
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def vpyconn():
     engine = sa.create_engine('vertica+vertica_python://dbadmin:abc123@localhost:5433/VMart')
     try:     
