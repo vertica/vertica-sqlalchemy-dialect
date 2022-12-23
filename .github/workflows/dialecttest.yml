@@ -9,7 +9,7 @@ on:
      - test-suite
 
 env:
-  DB_PWD: $DB_PWD
+  DB_PWD: 'abc123'
 
 jobs:
   build:
