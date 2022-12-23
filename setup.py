@@ -3,7 +3,9 @@ from setuptools import setup
 with open("README.rst", "r") as f:
     description = f.read()
 
-version_info = (0, 1, 2)
+
+version_info = (0, 1, 3)
+
 version = '.'.join(map(str, version_info))
 
 setup(
@@ -20,6 +22,7 @@ setup(
     ),
     install_requires=(
         'six >= 1.10.0',
+
         'SQLAlchemy >= 1.4.44',
         'vertica-python>=1.1.1'
     ),
@@ -28,7 +31,7 @@ setup(
             'pyodbc>=4.0.16',
         ],
         'vertica-python': [
-            'vertica-python>=1.1.1',
+            'vertica-python>=0.7.3',
         ],
     },
     entry_points={
