@@ -16,10 +16,10 @@ sa.create_engine('vertica+vertica_python://user:pwd@host:port/database')
 Installation
 From PyPI:
 
-pip install sqlalchemy-vertica[pyodbc,turbodbc,vertica-python]  # choose the relevant engines
+pip install sqlalchemy-vertica-dialect[pyodbc,turbodbc,vertica-python]  # choose the relevant engines
 From git:
 
-git clone https://github.com/startappdev/sqlalchemy-vertica
+git clone https://github.com/vertica/sqlalchemy-vertica
 cd sqlalchemy-vertica
 pip install pyodbc turbodbc vertica-python  # choose the relevant engines
 python setup.py install

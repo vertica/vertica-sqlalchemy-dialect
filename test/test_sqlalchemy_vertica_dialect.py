@@ -61,7 +61,9 @@ def vpyconn():
         conn = engine.connect()
     except:
         print("Failed to connect to the database")
-    return [engine, conn]
+    yield [engine, conn]
+    conn.close()
+    engine.dispose()
 
 def test_get_server_version_info(vpyconn):
     res = vpyconn[0].dialect._get_server_version_info(vpyconn[1])
