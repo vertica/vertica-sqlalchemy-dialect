@@ -58,6 +58,3 @@ jobs:
       - name: Run tests
         # This step references the directory that contains the action.
         uses: ./.github/actions/run-unit-test
-        # run: |
-        #   source venv/bin/activate
-        #   python validate.py
