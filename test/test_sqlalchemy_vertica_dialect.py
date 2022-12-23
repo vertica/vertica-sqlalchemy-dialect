@@ -65,7 +65,7 @@ def vpyconn():
 
 def test_get_server_version_info(vpyconn):
     res = vpyconn[0].dialect._get_server_version_info(vpyconn[1])
-    assert res == (12,0,0)
+    assert res == (12,0,2)
 
 def test_get_default_schema_name(vpyconn):
     res = vpyconn[0].dialect._get_default_schema_name(vpyconn[1])
@@ -112,7 +112,7 @@ def test_get_table_oid(vpyconn):
 def test_get_projection_names(vpyconn):
     res = vpyconn[0].dialect.get_projection_names(connection=vpyconn[1], schema="public")
     # Assert the no. of projections
-    assert len(res) == 40
+    assert len(res) == 41
     # Assert sample projection
     assert sample_projection in res
 
