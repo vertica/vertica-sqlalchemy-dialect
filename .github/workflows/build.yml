@@ -1,0 +1,60 @@
+name: Test Vertica-SQLALchemy dialect
+
+on:
+  push:
+    branches:
+     - test-suite
+  pull_request:
+    branches:
+     - test-suite
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11']
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up a VerticaDB server
+        timeout-minutes: 15
+        run: |
+          docker run -d -p 5433:5433 -p 5444:5444 \
+            --name vertica_docker \
+            vertica/vertica-ce:12.0.2-0
+          echo "Vertica startup ..."
+          until docker exec vertica_docker test -f /data/vertica/VMart/agent_start.out; do \
+            echo "..."; \
+            sleep 3; \
+          done;
+          echo "Vertica is up"
+          docker exec -u dbadmin vertica_docker /opt/vertica/bin/vsql -c "\l"
+          docker exec -u dbadmin vertica_docker /opt/vertica/bin/vsql -c "select version()"
+      - name: Add necessary schema into VerticaDB
+        timeout-minutes: 15
+        run: |
+          docker cp ddl.sql vertica_docker:/home/dbadmin/
+          docker exec vertica_docker sh -c "/opt/vertica/bin/vsql -w 'abc123' -f /home/dbadmin/ddl.sql &&
+          sudo yum install git -y &&
+          cd /opt && sudo git clone https://github.com/vertica/Machine-Learning-Examples &&
+          sudo chmod -R a+rwx /opt/Machine-Learning-Examples &&
+          cd /opt/Machine-Learning-Examples/data && /opt/vertica/bin/vsql -w 'abc123' -f load_ml_data.sql &&
+          cd .. &&
+          /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naive_bayes_data_preparation.sql &&
+          /opt/vertica/bin/vsql -w 'abc123' -f naive_bayes/naivebayes_examples.sql &&
+          /opt/vertica/bin/vsql -w 'abc123' -c 'select count(*) from v_catalog.tables'
+          "
+      - name: Install dependencies
+        run: |
+          python -m ensurepip --upgrade
+          python -m venv venv
+          source venv/bin/activate
+          python -m pip install setuptools wheel pytest pyodbc sqlalchemy
+          python setup.py install
+      - name: Run tests
+        # This step references the directory that contains the action.
+        uses: ./.github/actions/run-unit-test

@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 from __future__ import absolute_import, unicode_literals, print_function, division
 
@@ -239,6 +237,8 @@ class VerticaDialect(default.DefaultDialect):
     def initialize(self, connection):
         super().initialize(connection)
 
+    """ Generic functions """
+
     def _get_default_schema_name(self, connection):
         return connection.scalar("SELECT current_schema()")
 
@@ -300,7 +300,7 @@ class VerticaDialect(default.DefaultDialect):
         c = connection.execute(has_seq_sql)
         return bool(c.scalar())
 
-    def has_type(self, connection, type_name, schema=None):
+    def has_type(self, connection, type_name):
         has_type_sql = sql.text(dedent("""
             SELECT EXISTS (
             SELECT type_name
@@ -359,9 +359,7 @@ class VerticaDialect(default.DefaultDialect):
             else:
                 TableSize = math.trunc(table_size['table_size'])
 
-        return {"text": "This Vertica module is still is development Process", "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
-
-
+        return {"text": "This Vertica module is still under development", "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
 
     @reflection.cache
     def get_table_oid(self, connection, table_name, schema=None, **kw):
@@ -386,6 +384,7 @@ class VerticaDialect(default.DefaultDialect):
         return table_oid
 
     def get_projection_names(self, connection, schema=None, **kw):
+        # TODO Clean schema_condition code
         if schema is not None:
             schema_condition = "lower(projection_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
@@ -456,8 +455,7 @@ class VerticaDialect(default.DefaultDialect):
 
         c = connection.execute(get_views_sql)
         return [row[0] for row in c]
-
-    
+ 
     def get_view_definition(self, connection, view_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(table_schema) = '%(schema)s'" % {
@@ -481,6 +479,7 @@ class VerticaDialect(default.DefaultDialect):
 
         return view_def
 
+    # Vertica does not support global temporary views. 
     @reflection.cache
     def get_temp_view_names(self, connection, schema=None, **kw):
         return []
@@ -538,20 +537,23 @@ class VerticaDialect(default.DefaultDialect):
             columns.append(column_info)
         return columns
 
+    # TODO this function doesnt seem to work even though the query is right
     @reflection.cache
     def get_unique_constraints(self, connection, table_name, schema=None, **kw):
         if schema is None:
             schema = self._get_default_schema_name(connection)
 
-        get_constrains_sql = sql.text(dedent("""
-            SELECT constraint_name, column_name
-            FROM v_catalog.constraint_columns
-            WHERE lower(table_name) = '%(table)s'
-            -- AND constraint_type IN ('p', 'u')
-            AND lower(table_schema) = '%(schema)s'
-        """ % {'schema': schema.lower(), 'table': table_name.lower()}))
-
-        c = connection.execute(get_constrains_sql)
+        get_constraints_sql = sql.text(
+                dedent(
+                    """
+                    SELECT constraint_name, column_name
+                    FROM v_catalog.constraint_columns
+                    WHERE table_name = '%(table)s' AND table_schema = '%(schema)s'
+                    """
+                    % {"schema": schema, "table": table_name}
+                )
+            )
+        c = connection.execute(get_constraints_sql)
         if c.rowcount <= 0:
             return []
 
@@ -565,10 +567,8 @@ class VerticaDialect(default.DefaultDialect):
         return [{"name": name, "column_names": cols} for name, cols in result_dict.items()]
 
     @reflection.cache
-    def get_check_constraints(
-            self, connection, table_name, schema=None, **kw):
-        table_oid = self.get_table_oid(connection, table_name, schema,
-                                       info_cache=kw.get('info_cache'))
+    def get_check_constraints(self, connection, table_name, schema=None, **kw):
+        table_oid = self.get_table_oid(connection, table_name, schema, info_cache=kw.get('info_cache'))
 
         constraints_sql = sql.text(dedent("""
             SELECT constraint_name, column_name
@@ -595,10 +595,12 @@ class VerticaDialect(default.DefaultDialect):
     def get_pk_constraint(self, bind, table_name, schema=None, **kw):
         return {'constrained_columns': [], 'name': 'undefined'}
 
+    # TODO complete the foreign keys function
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
         return []
 
+    # TODO complete the foreign keys function
     @reflection.cache
     def get_indexes(self, connection, table_name, schema, **kw):
         return []
@@ -607,7 +609,6 @@ class VerticaDialect(default.DefaultDialect):
     # noinspection PyUnusedLocal
     def visit_create_index(self, create):
         return None
-
     
     def _get_column_info(  # noqa: C901
         self, name, data_type, default, is_nullable, schema=None
@@ -704,9 +705,10 @@ class VerticaDialect(default.DefaultDialect):
         )
         return column_info
 
+    """ Database/Schema level functions """
     @reflection.cache
     def get_models_names(self, connection, schema=None, **kw):
-
+        # TODO Clean the code for schema_condition
         if schema is not None:
             schema_condition = "lower(schema_name) = '%(schema)s'" % {
                 'schema': schema.lower()}
@@ -758,7 +760,6 @@ class VerticaDialect(default.DefaultDialect):
             pk_columns.append(columns)
 
         return {'constrained_columns': pk_columns, 'name': pk_columns}
-    
 
     def _get_properties_keys(self, connection, db_name, schema, level=None):
         try:
@@ -822,12 +823,11 @@ class VerticaDialect(default.DefaultDialect):
                 user_defined_library += f"{data['lib_name']} -- {data['description']} |  "
 
             return {"projection_count": projection_count,
-                    'udx_list': udx_list, 'Udx_langauge': user_defined_library}
+                    'udx_list': udx_list, 'udx_language': user_defined_library}
 
         except Exception as e:
             print("Exception in _get_schema_keys from vertica ")
             
-
     def _get_database_keys(self, connection, db_name):
         try:
             print("")
@@ -848,13 +848,13 @@ class VerticaDialect(default.DefaultDialect):
             """))
 
             cluster_type = ""
-            communical_path = ""
+            communal_path = ""
             cluster_type_res = connection.execute(cluster_type_qry)
             for each in cluster_type_res:
                 cluster_type = each.database_mode
                 if cluster_type.lower() == 'eon':
                     for each in connection.execute(communal_storage_path):
-                        communical_path += str(each.location_path) + " | "
+                        communal_path += str(each.location_path) + " | "
 
             SUBCLUSTER_SIZE = sql.text(dedent("""
                             SELECT subclusters.subcluster_name , CAST(sum(disk_space_used_mb // 1024) as varchar(10)) as subclustersize from subclusters  
@@ -874,13 +874,13 @@ class VerticaDialect(default.DefaultDialect):
             for each in connection.execute(cluster__size):
                 cluster_size = str(each.cluster_size) + " GB"
 
-            return {"cluster_type": cluster_type, "cluster_size": cluster_size, 'Subcluster': subclusters,
-                    "communinal_storage_path": communical_path}
+            return {"cluster_type": cluster_type, "cluster_size": cluster_size, 'subcluster': subclusters,
+                    "communal_storage_path": communal_path}
 
         except Exception as e:
             print("Exception in _get_database_keys")
             
-    # @reflection.cache
+    """ Datahub specific functions """
     def _get_extra_tags(
         self, connection, name, schema=None
     ) -> Optional[Dict[str, str]]:
@@ -921,10 +921,8 @@ class VerticaDialect(default.DefaultDialect):
         for each in owner_res:
             final_tags[each['table_name']] = each['owner_name']
         return final_tags
-    
-    
-    @reflection.cache
-    def get_projection_comment(self, connection, projection_name, schema=None, **kw):
+
+    def _get_ros_count(self, connection, projection_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(projection_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
@@ -937,6 +935,19 @@ class VerticaDialect(default.DefaultDialect):
                 WHERE lower(projection_name) = '%(table)s'
 
             """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
+
+        for data in connection.execute(src):
+            ros_count = data['ros_count']
+        
+        return ros_count
+
+    @reflection.cache
+    def get_projection_comment(self, connection, projection_name, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(projection_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
 
         sig = sql.text(dedent("""
                 SELECT is_segmented 
@@ -996,9 +1007,6 @@ class VerticaDialect(default.DefaultDialect):
                 for data in connection.execute(ssk):
                     segmentation_key = str(data)
 
-        for data in connection.execute(src):
-            ros_count = data['ros_count']
-
         for data in connection.execute(spk):
             partition_key = data['partition_key']
 
@@ -1024,8 +1032,8 @@ class VerticaDialect(default.DefaultDialect):
             else:
                 cached_projection = "False"
 
-        return {"text": "This Vertica module is still is development Process for Projections",
-                "properties": {"ROS Count": str(ros_count), "is_segmented": str(is_segmented),
+        return {"text": "This Vertica module is still under development for Projections",
+                "properties": {"ROS Count": str(self._get_ros_count(connection, projection_name, schema=None)), "is_segmented": str(is_segmented),
                                "Projection Type": str(projection_type), "Partition Key": str(partition_key),
                                "Number of Partition": str(partition_number),
                                "Segmentation_key": segmentation_key,
@@ -1099,17 +1107,23 @@ class VerticaDialect(default.DefaultDialect):
             attr_details_dict.update(value_final)
             attributes_details.append(attr_details_dict)
 
-        return {"text": "This Vertica module is still is development Process", "properties": {"used_by": str(used_by),
-                "Model Attrributes ": str(attr_name), "Model Specifications": str(attributes_details)}}
+        return {"text": "This Vertica module is still under development", "properties": {"used_by": str(used_by),
+                "Model Attributes": str(attr_name), "Model Specifications": str(attributes_details)}}
         
     @reflection.cache
-    def get_oauth_comment(self, connection, model_name, schema=None, **kw):
+    def get_oauth_comment(self, connection, **kw):
 
-        get_oauth_comments = sql.text(dedent("""
-                            SELECT auth_oid ,is_auth_enabled, is_fallthrough_enabled,auth_parameters ,auth_priority ,address_priority from v_catalog.client_auth
-                                WHERE auth_method = 'OAUTH'
-
-                                """))
+        get_oauth_comments = \
+            sql.text(dedent("""
+                SELECT auth_oid,
+                is_auth_enabled, 
+                is_fallthrough_enabled,
+                auth_parameters, 
+                auth_priority, 
+                address_priority 
+                from v_catalog.client_auth
+                WHERE auth_method = 'OAUTH'
+            """))
         client_id = ""
         client_secret = ""
         for data in connection.execute(get_oauth_comments):
@@ -1141,8 +1155,8 @@ class VerticaDialect(default.DefaultDialect):
             address_priority = data['address_priority']
             is_fallthrough_enabled = data['is_fallthrough_enabled']
 
-        return {"text": "This Vertica module is still is development Process", "properties": {"discovery_url ": str(discovery_url),
-                "client_id  ": str(client_id), "introspect_url ": str(introspect_url), "auth_oid ": str(auth_oid), "client_secret ": str(client_secret),
-                "is_auth_enabled": str(is_auth_enabled), "auth_priority ": str(auth_priority), "address_priority ": str(address_priority), "is_fallthrough_enabled": str(is_fallthrough_enabled), }}
+        return {"text": "This Vertica module is still under development", "properties": {"discovery_url": str(discovery_url),
+                "client_id": str(client_id), "introspect_url": str(introspect_url), "auth_oid ": str(auth_oid), "client_secret": str(client_secret),
+                "is_auth_enabled": str(is_auth_enabled), "auth_priority": str(auth_priority), "address_priority": str(address_priority), "is_fallthrough_enabled": str(is_fallthrough_enabled), }}
 
     
