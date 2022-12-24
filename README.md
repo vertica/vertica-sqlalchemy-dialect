@@ -26,7 +26,7 @@ pip install --upgrade vertica-sqlalchemy-dialect
 ## Verifying Your Installation
 
 1. Create a file (e.g. `validate.py`) that contains the following Python sample code,
-   which connects to Snowflake and displays the Snowflake version:
+   which connects to Vertica and displays the Vertica version:
 
     ```python
     from sqlalchemy import create_engine
@@ -65,28 +65,28 @@ pip install --upgrade vertica-sqlalchemy-dialect
 
 As much as possible, Vertica SQLAlchemy provides compatible functionality for SQLAlchemy applications. For information on using SQLAlchemy, see the [SQLAlchemy documentation](http://docs.sqlalchemy.org/en/latest/).
 
-However, vertica SQLAlchemy also provides Snowflake-specific parameters and behavior, which are described in the following sections.
+However, Vertica SQLAlchemy also provides specific parameters and behavior, which are described in the following sections.
 
 ### Connection Parameters
 
-Snowflake SQLAlchemy uses the following syntax for the connection string used to connect to Snowflake and initiate a session:
+Vertica SQLAlchemy Dialect uses the following syntax for the connection string used to connect to Vertica and initiate a session:
 
 ```python
-'snowflake://<user_login_name>:<password>@<account_name>'
+'vertica+vertica_python://<user>:<password>@<host_name>/<database_name>'
 ```
 
 Where:
 
-- `<user_login_name>` is the login name for your Snowflake user.
-- `<password>` is the password for your Snowflake user.
-- `<account_name>` is the name of your Snowflake account.
+- `<user>` is the login name for your Vertica user.
+- `<password>` is the password for your Vertica user.
+- `<host_name>` is the IP/FQDN of your Vertica Host.
+- `<database_name>` is the name of your Vertica Database.
 
-Include the region in the `<account_name>` if applicable, more info is available [here](https://docs.snowflake.com/en/user-guide/connecting.html#your-snowflake-account-name).
 
-You can optionally specify the initial database and schema for the Snowflake session by including them at the end of the connection string, separated by `/`. You can also specify the initial warehouse and role for the session as a parameter string at the end of the connection string:
+You can optionally specify the initial database and schema for the Vertica session by including them at the end of the connection string, separated by `/`. You can also specify the initial warehouse and role for the session as a parameter string at the end of the connection string:
 
 ```python
-'snowflake://<user_login_name>:<password>@<account_name>/<database_name>/<schema_name>?warehouse=<warehouse_name>&role=<role_name>'
+'vertica+vertica_python://<user>:<password>@<host_name>/<database_name>'
 ```
 
 <!-- #### Escaping Special Characters such as `%, @` signs in Passwords
