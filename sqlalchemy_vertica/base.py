@@ -1,8 +1,10 @@
+
+
 from __future__ import annotations
 from __future__ import absolute_import, unicode_literals, print_function, division
 
 from typing import Any, Dict, Optional, List, Tuple
-
+import logging
 from sqlalchemy import exc
 from sqlalchemy import sql
 from sqlalchemy import util
@@ -168,19 +170,6 @@ class VerticaInspector(reflection.Inspector):
             self.bind, projection_name, schema, info_cache=self.info_cache, **kw
         )
 
-    def _get_properties_keys(self, db_name: str, schema: str, level: str) -> dict:
-        """ will return all properties as key : value 
-            which should come under the given schema on the given level 
-            eg. schema or database level
-
-        Args:
-            db_name (str): _description_
-            schema (str): Name of the schema to return
-        """
-        return self.dialect._get_properties_keys(
-            self.bind, db_name, schema, level
-        )
-
     def get_model_comment(self, model_name, schema=None, **kw):
         """Return information about the ML Model properties for ``schema``.
             as key and value.
@@ -219,6 +208,30 @@ class VerticaInspector(reflection.Inspector):
             self.bind, _name, schema, info_cache=self.info_cache, **kw
         )
 
+    def _get_database_properties(self, db_name ,  **kw):
+        """Return information about the database properties .
+            as key and value.
+
+       
+        :param: db_name
+        return dictionary
+        """
+        return self.dialect._get_database_properties(
+            self.bind, db_name , **kw
+        )
+        
+    def _get_schema_properties(self, schema , **kw):
+        """Return information about the schema properties .
+            as key and value.
+
+       
+        :param: db_name
+        return dictionary
+        """
+        return self.dialect._get_schema_properties(
+            self.bind, schema , **kw
+        )
+ 
 
 # noinspection PyArgumentList,PyAbstractClass
 class VerticaDialect(default.DefaultDialect):
@@ -236,8 +249,6 @@ class VerticaDialect(default.DefaultDialect):
 
     def initialize(self, connection):
         super().initialize(connection)
-
-    """ Generic functions """
 
     def _get_default_schema_name(self, connection):
         return connection.scalar("SELECT current_schema()")
@@ -310,6 +321,97 @@ class VerticaDialect(default.DefaultDialect):
 
         c = connection.execute(has_type_sql)
         return bool(c.scalar())
+    
+    def _get_database_properties(self, connection,database):
+        try:
+            
+            cluster_type_qry = sql.text(dedent(
+                """SELECT CASE COUNT(*) WHEN 0 THEN 'Enterprise' ELSE 'Eon' END AS database_mode FROM v_catalog.shards """))
+
+            communal_storage_path = sql.text(dedent(
+                """SELECT location_path from storage_locations WHERE sharing_type = 'COMMUNAL' """))
+            cluster_type = ""
+            communal_path = ""
+            cluster_type_res = connection.execute(cluster_type_qry)
+            for each in cluster_type_res:
+                cluster_type = each.database_mode
+                if cluster_type.lower() == 'eon':
+                    for each in connection.execute(communal_storage_path):
+                        communal_path += str(each.location_path) + " | "
+            SUBCLUSTER_SIZE = sql.text(dedent("""
+                        SELECT subclusters.subcluster_name , CAST(sum(disk_space_used_mb // 1024) as varchar(10)) as subclustersize from subclusters  
+                        inner join disk_storage using (node_name) 
+                        group by subclusters.subcluster_name
+                            """))
+            subclusters = " "
+            for data in connection.execute(SUBCLUSTER_SIZE):
+                subclusters += f"{data['subcluster_name']} -- {data['subclustersize']} GB |  "
+            cluster__size = sql.text(dedent("""
+                select ROUND(SUM(disk_space_used_mb) //1024 ) as cluster_size
+                from disk_storage
+            """))
+            cluster_size = ""
+            for each in connection.execute(cluster__size):
+                cluster_size = str(each.cluster_size) + " GB"
+
+            return {"cluster_type": cluster_type, "cluster_size": cluster_size, 'subcluster': subclusters,
+                    "communal_storage_path": communal_path}
+        except Exception as ex:
+            logging.warning(f"{database}", f"unable to get extra_properties : {ex}")
+            
+    def _get_schema_properties(self, connection, schema):
+        try:
+            
+
+            # Projection count
+            projection_count_query = sql.text(dedent("""
+                SELECT 
+                    COUNT(projection_name)  as pc
+                from 
+                    v_catalog.projections 
+                WHERE lower(projection_schema) = '%(schema)s'
+            """ % {"schema": schema}))
+
+            projection_count = None
+            for each in connection.execute(projection_count_query):
+                projection_count = each.pc
+
+            UDL_LANGUAGE = sql.text(dedent("""
+                SELECT lib_name , description 
+                    FROM USER_LIBRARIES
+                WHERE lower(schema_name) = '%(schema)s'
+            """ % {"schema": schema}))
+
+            # UDX list
+            UDX_functions_qry = sql.text(dedent("""
+                SELECT 
+                    function_name 
+                FROM 
+                    USER_FUNCTIONS
+                Where schema_name  = '%(schema)s'
+            """ % {'schema': schema, }))
+            udx_list = ""
+            for each in connection.execute(UDX_functions_qry):
+                udx_list += each.function_name + ", "
+
+            # UDX Language
+            user_defined_library = ""
+ 
+            for data in connection.execute(UDL_LANGUAGE):
+                user_defined_library += f"{data['lib_name']} -- {data['description']} |  "
+                
+               
+
+            # print("projection_count: " + str(projection_count)
+            return {"projection_count": str(projection_count),
+                    'udx_list': str(udx_list), 'Udx_langauge': str(user_defined_library)}
+
+            # return {"projection_count": "projection_count"}
+
+        except Exception as ex:
+            self.report.report_failure(f"{schema}", f"unable to get extra_properties : {ex}")
+          
+        
 
     @reflection.cache
     def get_schema_names(self, connection, **kw):
@@ -359,7 +461,9 @@ class VerticaDialect(default.DefaultDialect):
             else:
                 TableSize = math.trunc(table_size['table_size'])
 
-        return {"text": "This Vertica module is still under development", "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
+        return {"text": "This Vertica module is still is development Process", "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
+
+
 
     @reflection.cache
     def get_table_oid(self, connection, table_name, schema=None, **kw):
@@ -384,7 +488,6 @@ class VerticaDialect(default.DefaultDialect):
         return table_oid
 
     def get_projection_names(self, connection, schema=None, **kw):
-        # TODO Clean schema_condition code
         if schema is not None:
             schema_condition = "lower(projection_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
@@ -455,7 +558,8 @@ class VerticaDialect(default.DefaultDialect):
 
         c = connection.execute(get_views_sql)
         return [row[0] for row in c]
- 
+
+    
     def get_view_definition(self, connection, view_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(table_schema) = '%(schema)s'" % {
@@ -479,7 +583,7 @@ class VerticaDialect(default.DefaultDialect):
 
         return view_def
 
-    # Vertica does not support global temporary views. 
+    # Vertica does not support global temporary views.
     @reflection.cache
     def get_temp_view_names(self, connection, schema=None, **kw):
         return []
@@ -536,7 +640,8 @@ class VerticaDialect(default.DefaultDialect):
             column_info.update({'primary_key': primary_key})
             columns.append(column_info)
         return columns
-
+    
+    
     # TODO this function doesnt seem to work even though the query is right
     @reflection.cache
     def get_unique_constraints(self, connection, table_name, schema=None, **kw):
@@ -566,9 +671,12 @@ class VerticaDialect(default.DefaultDialect):
 
         return [{"name": name, "column_names": cols} for name, cols in result_dict.items()]
 
+
     @reflection.cache
-    def get_check_constraints(self, connection, table_name, schema=None, **kw):
-        table_oid = self.get_table_oid(connection, table_name, schema, info_cache=kw.get('info_cache'))
+    def get_check_constraints(
+            self, connection, table_name, schema=None, **kw):
+        table_oid = self.get_table_oid(connection, table_name, schema,
+                                       info_cache=kw.get('info_cache'))
 
         constraints_sql = sql.text(dedent("""
             SELECT constraint_name, column_name
@@ -594,13 +702,13 @@ class VerticaDialect(default.DefaultDialect):
     @reflection.cache
     def get_pk_constraint(self, bind, table_name, schema=None, **kw):
         return {'constrained_columns': [], 'name': 'undefined'}
-
+    
     # TODO complete the foreign keys function
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
         return []
-
-    # TODO complete the foreign keys function
+    
+     # TODO complete the foreign keys function
     @reflection.cache
     def get_indexes(self, connection, table_name, schema, **kw):
         return []
@@ -609,6 +717,7 @@ class VerticaDialect(default.DefaultDialect):
     # noinspection PyUnusedLocal
     def visit_create_index(self, create):
         return None
+
     
     def _get_column_info(  # noqa: C901
         self, name, data_type, default, is_nullable, schema=None
@@ -704,16 +813,10 @@ class VerticaDialect(default.DefaultDialect):
             autoincrement=autoincrement,
         )
         return column_info
-
-    """ Database/Schema level functions """
+     
+     
     @reflection.cache
     def get_models_names(self, connection, schema=None, **kw):
-        # TODO Clean the code for schema_condition
-        if schema is not None:
-            schema_condition = "lower(schema_name) = '%(schema)s'" % {
-                'schema': schema.lower()}
-        else:
-            schema_condition = "1"
 
         get_models_sql = sql.text(dedent("""
             SELECT model_name 
@@ -760,127 +863,10 @@ class VerticaDialect(default.DefaultDialect):
             pk_columns.append(columns)
 
         return {'constrained_columns': pk_columns, 'name': pk_columns}
+    
 
-    def _get_properties_keys(self, connection, db_name, schema, level=None):
-        try:
-            properties_keys = dict()
-            if level == "schema":
-             
-                properties_keys = self._get_schema_keys(
-                    connection, db_name, schema)
-            if level == "database":
-               
-                properties_keys = self._get_database_keys(
-                    connection, db_name)
-          
-            return properties_keys
-        except Exception as e:
-            import traceback
-            traceback.print_exe()
-            print("Error in finding schema keys in vertica ")
-
-    def _get_schema_keys(self, connection, db_name, schema):
-        try:
             
-            if schema is not None:
-                schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                    'schema': schema.lower()}
-
-            # Projection count
-            projection_count_query = sql.text(dedent("""
-                SELECT 
-                    COUNT(projection_name)  as pc
-                from 
-                    v_catalog.projections 
-                WHERE lower(projection_schema) = '%(schema)s'
-            """ % {'schema_condition': schema_condition, "schema": schema}))
-
-            projection_count = None
-            for each in connection.execute(projection_count_query):
-                projection_count = each.pc
-
-            UDL_LANGUAGE = sql.text(dedent("""
-                SELECT lib_name , description 
-                    FROM USER_LIBRARIES
-                WHERE lower(schema_name) = '%(schema)s'
-            """ % {'schema_condition': schema_condition, "schema": schema}))
-
-            # UDX list
-            UDX_functions_qry = sql.text(dedent("""
-                SELECT 
-                    function_name 
-                FROM 
-                    USER_FUNCTIONS
-                Where schema_name  = '%(schema)s'
-            """ % {'schema': schema, 'schema_condition': schema_condition}))
-            udx_list = ""
-            for each in connection.execute(UDX_functions_qry):
-                udx_list += each.function_name + ", "
-
-            # UDX Language
-            user_defined_library = ""
-            for data in connection.execute(UDL_LANGUAGE):
-                user_defined_library += f"{data['lib_name']} -- {data['description']} |  "
-
-            return {"projection_count": projection_count,
-                    'udx_list': udx_list, 'udx_language': user_defined_library}
-
-        except Exception as e:
-            print("Exception in _get_schema_keys from vertica ")
-            
-    def _get_database_keys(self, connection, db_name):
-        try:
-            print("")
-            # Query for CLUSTER TYPE
-            cluster_type_qry = sql.text(dedent("""
-                SELECT 
-                CASE COUNT(*) 
-                    WHEN 0 
-                    THEN 'Enterprise' 
-                    ELSE 'Eon' 
-                END AS database_mode 
-                FROM v_catalog.shards
-            """))
-
-            communal_storage_path = sql.text(dedent("""
-                SELECT location_path from storage_locations 
-                    WHERE sharing_type = 'COMMUNAL'
-            """))
-
-            cluster_type = ""
-            communal_path = ""
-            cluster_type_res = connection.execute(cluster_type_qry)
-            for each in cluster_type_res:
-                cluster_type = each.database_mode
-                if cluster_type.lower() == 'eon':
-                    for each in connection.execute(communal_storage_path):
-                        communal_path += str(each.location_path) + " | "
-
-            SUBCLUSTER_SIZE = sql.text(dedent("""
-                            SELECT subclusters.subcluster_name , CAST(sum(disk_space_used_mb // 1024) as varchar(10)) as subclustersize from subclusters  
-                            inner join disk_storage using (node_name) 
-                            group by subclusters.subcluster_name
-                            """))
-
-            subclusters = " "
-            for data in connection.execute(SUBCLUSTER_SIZE):
-                subclusters += f"{data['subcluster_name']} -- {data['subclustersize']} GB |  "
-
-            cluster__size = sql.text(dedent("""
-                select ROUND(SUM(disk_space_used_mb) //1024 ) as cluster_size
-                from disk_storage
-            """))
-            cluster_size = ""
-            for each in connection.execute(cluster__size):
-                cluster_size = str(each.cluster_size) + " GB"
-
-            return {"cluster_type": cluster_type, "cluster_size": cluster_size, 'subcluster': subclusters,
-                    "communal_storage_path": communal_path}
-
-        except Exception as e:
-            print("Exception in _get_database_keys")
-            
-    """ Datahub specific functions """
+    # @reflection.cache
     def _get_extra_tags(
         self, connection, name, schema=None
     ) -> Optional[Dict[str, str]]:
@@ -921,7 +907,7 @@ class VerticaDialect(default.DefaultDialect):
         for each in owner_res:
             final_tags[each['table_name']] = each['owner_name']
         return final_tags
-
+    
     def _get_ros_count(self, connection, projection_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(projection_schema) = '%(schema)s'" % {
@@ -940,7 +926,7 @@ class VerticaDialect(default.DefaultDialect):
             ros_count = data['ros_count']
         
         return ros_count
-
+    
     @reflection.cache
     def get_projection_comment(self, connection, projection_name, schema=None, **kw):
         if schema is not None:
@@ -948,6 +934,8 @@ class VerticaDialect(default.DefaultDialect):
                 'schema': schema.lower()}
         else:
             schema_condition = "1"
+
+       
 
         sig = sql.text(dedent("""
                 SELECT is_segmented 
@@ -1006,6 +994,8 @@ class VerticaDialect(default.DefaultDialect):
             if is_segmented:
                 for data in connection.execute(ssk):
                     segmentation_key = str(data)
+
+       
 
         for data in connection.execute(spk):
             partition_key = data['partition_key']
@@ -1110,19 +1100,20 @@ class VerticaDialect(default.DefaultDialect):
         return {"text": "This Vertica module is still under development", "properties": {"used_by": str(used_by),
                 "Model Attributes": str(attr_name), "Model Specifications": str(attributes_details)}}
         
+        
     @reflection.cache
     def get_oauth_comment(self, connection, **kw):
 
-        get_oauth_comments = \
-            sql.text(dedent("""
-                SELECT auth_oid,
-                is_auth_enabled, 
-                is_fallthrough_enabled,
-                auth_parameters, 
-                auth_priority, 
-                address_priority 
-                from v_catalog.client_auth
-                WHERE auth_method = 'OAUTH'
+        get_oauth_comments = sql.text(dedent("""
+            SELECT auth_oid ,
+            is_auth_enabled, 
+            is_fallthrough_enabled,
+            auth_parameters ,
+            auth_priority ,
+            address_priority 
+            from v_catalog.client_auth
+            WHERE auth_method = 'OAUTH'
+
             """))
         client_id = ""
         client_secret = ""
