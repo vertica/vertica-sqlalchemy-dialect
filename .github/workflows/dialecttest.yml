@@ -1,4 +1,4 @@
-name: Test Vertica-SQLALchemy dialect
+name: Test Vertica-SQLAlchemy dialect
 
 on:
   push:

@@ -2,57 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql import sqltypes
 import pytest
 import re 
-
-
-sample_table_list = {"store":["store_orders_fact"],"public": ["customer_dimension","employee_dimension","product_dimension", "vendor_dimension"]}
-sample_temp_table = "sampletemp"
-sample_projection = "employee_super"
-sample_view = "sampleview"
-sample_columns = [
-    "product_key",
-    "product_version",
-    "product_description",
-    "sku_number",
-    "category_description",
-    "department_description",
-    "package_type_description",
-    "package_size",
-    "fat_content",
-    "diet_type",
-    "weight",
-    "weight_units_of_measure",
-    "shelf_width",
-    "shelf_height",
-    "shelf_depth",
-    "product_price",
-    "product_cost",
-    "lowest_competitor_price",
-    "highest_competitor_price",
-    "average_competitor_price",
-    "discontinued_flag"
-    ]
-
-sample_constraints = {
-    "fk_store_orders_vendor":"vendor_key",
-    "fk_store_orders_product":"product_key",
-    "C_NOTNULL":"store_key" ,
-    "C_NOTNULL":"product_version",
-    "fk_store_orders_employee":"employee_key",
-    "C_NOTNULL":"order_number",
-    "C_NOTNULL":"vendor_key",
-    "fk_store_orders_product":"product_version",
-    "fk_store_orders_store":"store_key",
-    "C_NOTNULL":"employee_key",
-    "C_NOTNULL":"product_key"
-}
-
-sample_pk = {"C_PRIMARY":"customer_key"}
-
-sample_model_list = ["naive_house84_model"]
-
-sample_tags = {"sampletemp": "dbadmin", "employee_dimension": "dbadmin", "clicks": "dbadmin"}
-
-sample_ml_model = "naive_house84_model"
+import test.sampleobjects as sample
 
 @pytest.fixture(scope="module")
 def vpyconn():
@@ -80,7 +30,7 @@ def test_has_schema(vpyconn):
     assert sc2 == True
 
 def test_has_table(vpyconn):
-    res = vpyconn[0].dialect.has_table(connection=vpyconn[1], table_name=sample_table_list["store"][0], schema="store")
+    res = vpyconn[0].dialect.has_table(connection=vpyconn[1], table_name=sample.sample_table_list["store"][0], schema="store")
     assert res == True
 
 def test_has_sequence(vpyconn):
@@ -98,13 +48,13 @@ def test_get_schema_names(vpyconn):
 
 # TODO Improve this function to verify the output with a regex match
 def test_get_table_comment(vpyconn):
-    res = vpyconn[0].dialect.get_table_comment(connection=vpyconn[1], table_name=sample_table_list["public"][0], schema="public")
+    res = vpyconn[0].dialect.get_table_comment(connection=vpyconn[1], table_name=sample.sample_table_list["public"][0], schema="public")
     assert res["properties"]["create_time"]
     assert res["properties"]["Total_Table_Size"]
 
 # TODO Improve this function to verify the output with a regex match
 def test_get_table_oid(vpyconn):
-    res = vpyconn[0].dialect.get_table_oid(connection=vpyconn[1], table_name=sample_table_list["public"][1], schema="public")
+    res = vpyconn[0].dialect.get_table_oid(connection=vpyconn[1], table_name=sample.sample_table_list["public"][1], schema="public")
     # Assert the oid is an int
     assert type(res) == int
     # Assert the format of the oid
@@ -116,20 +66,20 @@ def test_get_projection_names(vpyconn):
     # Assert the no. of projections
     assert len(res) == 41
     # Assert sample projection
-    assert sample_projection in res
+    assert sample.sample_projection in res
 
 def test_get_table_names(vpyconn):
     res = vpyconn[0].dialect.get_table_names(connection=vpyconn[1], schema="public")
     # Assert the no. of tables
     assert len(res) == 42
     # Assert sample tables
-    assert all(value in res  for value in sample_table_list["public"])
+    assert all(value in res  for value in sample.sample_table_list["public"])
 
     res = vpyconn[0].dialect.get_table_names(connection=vpyconn[1], schema="store")
     # Assert the no of tables in another schema
     assert len(res) == 3
     # Assert sample tables
-    assert all(value in res  for value in sample_table_list["store"])
+    assert all(value in res  for value in sample.sample_table_list["store"])
 
 
 def test_get_temp_table_names(vpyconn):
@@ -137,17 +87,17 @@ def test_get_temp_table_names(vpyconn):
     # Assert the no. of temp tables
     assert len(res) == 1
     # Assert sample tables
-    assert sample_temp_table in res
+    assert sample.sample_temp_table in res
 
 def test_get_view_names(vpyconn):
     res = vpyconn[0].dialect.get_view_names(connection=vpyconn[1], schema="public")
     # Assert the no. of views
     assert len(res) == 1
     # Assert sample view
-    assert sample_view in res
+    assert sample.sample_view in res
 
 def test_get_view_definition(vpyconn):
-    res = vpyconn[0].dialect.get_view_definition(connection=vpyconn[1], view_name=sample_view, schema="public")
+    res = vpyconn[0].dialect.get_view_definition(connection=vpyconn[1], view_name=sample.sample_view, schema="public")
     # Assert the view definition exists
     assert len(res)>0
     # Assert the format of a view creation
@@ -159,14 +109,14 @@ def test_get_temp_view_names(vpyconn):
     # Assert the no. of views
     assert len(res) == 1
     # Assert sample view
-    assert sample_view in res
+    assert sample.sample_view in res
 
 def test_get_columns(vpyconn):
-    res = vpyconn[0].dialect.get_columns(connection=vpyconn[1], table_name=sample_table_list["public"][2], schema="public")
+    res = vpyconn[0].dialect.get_columns(connection=vpyconn[1], table_name=sample.sample_table_list["public"][2], schema="public")
     # Assert the no. of columns
     assert len(res)>0
     # Assert sample columns
-    assert all(value["name"] in sample_columns for value in res)
+    assert all(value["name"] in sample.sample_columns for value in res)
 
 def test_get_unique_constraints(vpyconn):
     # TODO query doesnt return the result here. Query works from other clients.
@@ -199,11 +149,11 @@ def test_denormalize_name(vpyconn):
 
 def test_get_pk_constraint(vpyconn):
     # TODO query doesnt return the result here. Query works from other clients.
-    res = vpyconn[0].dialect.get_pk_constraint(connection=vpyconn[1], table_name=sample_table_list["public"][0], schema="public")
+    res = vpyconn[0].dialect.get_pk_constraint(connection=vpyconn[1], table_name=sample.sample_table_list["public"][0], schema="public")
     # Assert the no. of unique contraints
     assert len(res)>0
     # Assert sample constraint
-    assert all(k in sample_pk.values() for k in res['name'])
+    assert all(k in sample.sample_pk.values() for k in res['name'])
 
 def test_get_foreign_keys(vpyconn):
     # TODO Need functionality
@@ -225,7 +175,7 @@ def test_get_column_info(vpyconn):
 def test_get_models_names(vpyconn):
     res = vpyconn[0].dialect.get_models_names(vpyconn[1], schema="public")
     # Assert model names
-    assert all(value in sample_model_list for value in res)
+    assert all(value in sample.sample_model_list for value in res)
 
 def test_get_properties_keys(vpyconn):
     db_keys = vpyconn[0].dialect._get_properties_keys(vpyconn[1], db_name="vmart", schema="public", level="database")
@@ -244,14 +194,14 @@ def test_get_properties_keys(vpyconn):
 def test_get_extra_tags(vpyconn):
     extra_tags = vpyconn[0].dialect._get_extra_tags(vpyconn[1], name="table", schema="public")
     assert len(extra_tags)==42
-    assert all(value in extra_tags for value in sample_tags)
+    assert all(value in extra_tags for value in sample.sample_tags)
 
 def test_get_ros_count(vpyconn):
     rc = vpyconn[0].dialect._get_ros_count(vpyconn[1], projection_name="employee_dimension_super", name="table", schema="public")
     assert rc>0
 
 def test_get_model_comment(vpyconn):
-    mc = vpyconn[0].dialect.get_model_comment(vpyconn[1], model_name=sample_ml_model, schema="public")
+    mc = vpyconn[0].dialect.get_model_comment(vpyconn[1], model_name=sample.sample_ml_model, schema="public")
     assert mc["properties"]["used_by"] == "dbadmin"
     assert len(mc["properties"]["Model Attributes"])>0
     assert len(mc["properties"]["Model Specifications"])>0

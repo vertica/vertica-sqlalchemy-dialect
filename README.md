@@ -178,15 +178,10 @@ Use the supported environment variables, `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PRO
 ### Opening and Closing Connection
 
 Open a connection by executing `engine.connect()`; avoid using `engine.execute()`. Make certain to close the connection by executing `connection.close()` before
-`engine.dispose()`; otherwise, the Python Garbage collector removes the resources required to communicate with Snowflake, preventing the Python connector from closing the session properly.
+`engine.dispose()`; otherwise, the Python Garbage collector removes the resources required to communicate with Vertica, preventing the Python connector from closing the session properly.
 
 ```python
-# Avoid this.
-engine = create_engine(...)
-engine.execute(<SQL>)
-engine.dispose()
-
-# Do this.
+# Example
 engine = create_engine(...)
 connection = engine.connect()
 try:
