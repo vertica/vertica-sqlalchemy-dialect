@@ -31,7 +31,7 @@ setup(
             'pyodbc>=4.0.16',
         ],
         'vertica-python': [
-            'vertica-python>=0.7.3',
+            'vertica-python>=1.1.1',
         ],
     },
     entry_points={

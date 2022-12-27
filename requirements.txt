@@ -1,2 +1,4 @@
 six >= 1.10.0
-sqlalchemy >= 1.1.5
+SQLAlchemy >= 1.4.44
+vertica-python>=1.1.1
+pyodbc>=4.0.16
