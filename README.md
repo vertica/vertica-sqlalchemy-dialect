@@ -14,7 +14,7 @@ This repo was forked from a series of chained forks as outlined in the [Acknowle
 
 [vertica-python](https://github.com/vertica/vertica-python) is needed to use the Vertica-SQLAlchemy-Dialect however, the connector does not need to be installed as the dialect installation takes care of it.
 
-Note: We recommend using the vertica-python connector. However, the dialect also allows connecting using [pyodbc] (https://pypi.org/project/pyodbc/)
+Note: We recommend using the vertica-python connector. However, the dialect also allows connecting using [pyodbc](https://pypi.org/project/pyodbc/). More instructions are at the end of this README.
 
 
 ## Installing Vertica SQLAlchemy Dialect
@@ -82,12 +82,6 @@ Vertica SQLAlchemy Dialect uses the following syntax for the connection string u
 'vertica+vertica_python://<user>:<password>@<host_name>/<database_name>'
 ```
 
-Or using pyodbc
-
-```python
-'vertica+pyodbc://@verticadsn'
-```
-
 Where:
 
 - `<user>` is the login name for your Vertica user.
@@ -96,17 +90,12 @@ Where:
 - `<database_name>` is the name of your Vertica Database.
 
 
-You can optionally specify the initial database and schema for the Vertica session by including them at the end of the connection string, separated by `/`. You can also specify the initial warehouse and role for the session as a parameter string at the end of the connection string:
+You can optionally specify the initial database and schema for the Vertica session by including them at the end of the connection string, separated by `/`. You can also specify other supported parameters by vertica-python at the end of the connection string:
 
 ```python
-'vertica+vertica_python://<user>:<password>@<host_name>/<database_name>'
+'vertica+vertica_python://<user>:<password>@<host_name>/<database_name>?session_label=sqlalchemy&connection_load_balance=1'
 ```
-
-```
-engine = sa.create_engine('vertica+pyodbc://@verticadsn')
-res = engine.connect().scalar('select version();')
-print(res)
-```
+For more information, check out the connection [options](https://github.com/vertica/vertica-python#set-properties-with-connection-string) of vertica-python.
 
 ### Opening and Closing Connection
 
@@ -124,14 +113,14 @@ finally:
     engine.dispose()
 ```
 
-## Using Pyodbc instead of vertica-python
+## Using pyodbc instead of vertica-python
 
-You may use pyodbc instead of vertica-python to connect to the database.
+You may use pyodbc instead of vertica-python for the connection.
 
 ### Create a Vertica DSN 
 
 
-This is setup for Ubuntu 14.04 assuming you have a driver installed in using [Vertica-Client-Drivers] (https://www.vertica.com/download/vertica/client-drivers/). For steps to install ODBC for Vertica follow official [Vertica Docs](https://www.vertica.com/docs/12.0.x/HTML/Content/Authoring/ConnectingToVertica/ClientODBC/InstallingODBC.htm)
+You will need to have a Vertica ODBC driver installed from [Vertica-Client-Drivers](https://www.vertica.com/download/vertica/client-drivers/). For steps to install ODBC for Vertica, follow official [Vertica Docs](https://www.vertica.com/docs/12.0.x/HTML/Content/Authoring/ConnectingToVertica/ClientODBC/InstallingODBC.htm)
 
 For example, you will need to configure these files with your credentials:
 
