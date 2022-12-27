@@ -9,7 +9,7 @@ version_info = (0, 1, 3)
 version = '.'.join(map(str, version_info))
 
 setup(
-    name='sqlalchemy_vertica',
+    name='sqlalchemy-vertica-dialec',
     version=version,
     description='Vertica dialect for sqlalchemy',
     long_description=description,

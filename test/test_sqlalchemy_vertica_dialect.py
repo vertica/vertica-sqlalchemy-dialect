@@ -177,19 +177,19 @@ def test_get_models_names(vpyconn):
     # Assert model names
     assert all(value in sample.sample_model_list for value in res)
 
-def test_get_properties_keys(vpyconn):
-    db_keys = vpyconn[0].dialect._get_properties_keys(vpyconn[1], db_name="vmart", schema="public", level="database")
-    sc_keys = vpyconn[0].dialect._get_properties_keys(vpyconn[1], db_name="vmart", schema="public", level="schema")
-    # Assert the schema level properties
-    assert sc_keys["projection_count"] > 0
-    assert len(sc_keys["udx_list"]) > 0
-    assert len(sc_keys["udx_language"]) > 0
-    # Assert the database level properties
-    gb = re.compile(r'[0-9]+ GB')
-    assert db_keys["cluster_type"] == "Enterprise"
-    assert bool(gb.match(db_keys["cluster_size"]))
-    assert db_keys["subcluster"] == ' '
-    assert len(db_keys["communal_storage_path"])==0
+# def test_get_properties_keys(vpyconn):
+#     db_keys = vpyconn[0].dialect._get_properties_keys(vpyconn[1], db_name="vmart", schema="public", level="database")
+#     sc_keys = vpyconn[0].dialect._get_properties_keys(vpyconn[1], db_name="vmart", schema="public", level="schema")
+#     # Assert the schema level properties
+#     assert sc_keys["projection_count"] > 0
+#     assert len(sc_keys["udx_list"]) > 0
+#     assert len(sc_keys["udx_language"]) > 0
+#     # Assert the database level properties
+#     gb = re.compile(r'[0-9]+ GB')
+#     assert db_keys["cluster_type"] == "Enterprise"
+#     assert bool(gb.match(db_keys["cluster_size"]))
+#     assert db_keys["subcluster"] == ' '
+#     assert len(db_keys["communal_storage_path"])==0
 
 def test_get_extra_tags(vpyconn):
     extra_tags = vpyconn[0].dialect._get_extra_tags(vpyconn[1], name="table", schema="public")
