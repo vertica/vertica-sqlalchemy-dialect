@@ -6,6 +6,8 @@ from .base import VerticaDialect as BaseVerticaDialect
 # noinspection PyAbstractClass, PyClassHasNoInit
 class VerticaDialect(BaseVerticaDialect):
     driver = 'vertica_python'
+    supports_statement_cache = True
+
 
     @classmethod
     def dbapi(cls):

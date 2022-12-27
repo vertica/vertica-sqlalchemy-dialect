@@ -12,7 +12,7 @@ This repo was forked from a series of chained forks as outlined in the [Acknowle
 
 ### Vertica-Python
 
-[vertica-python](https://github.com/vertica/vertica-python) is needed to use the Vertica-SQLAlchemy-Dialect however, the connector does not need to be installed as the dialect installation takes care of it.
+[vertica-python](https://github.com/vertica/vertica-python) is needed to use the Vertica-SQLAlchemy-Dialect. The connector does not need to be installed as the dialect installation takes care of it.
 
 Note: We recommend using the vertica-python connector. However, the dialect also allows connecting using [pyodbc](https://pypi.org/project/pyodbc/). More instructions are at the end of this README.
 
@@ -56,7 +56,7 @@ pip install --upgrade vertica-sqlalchemy-dialect
 
 2. Replace the credentials with the values for Vertica DB and user.
 
-    For more details, see [Connection Parameters](#connection-parameters).
+    For more details, see [Connection Parameters](https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect#connection-parameters).
 
 3. Execute the sample code. For example, if you created a file named `validate.py`:
 
@@ -120,7 +120,7 @@ You may use pyodbc instead of vertica-python for the connection.
 ### Create a Vertica DSN 
 
 
-You will need to have a Vertica ODBC driver installed from [Vertica-Client-Drivers](https://www.vertica.com/download/vertica/client-drivers/). For steps to install ODBC for Vertica, follow official [Vertica Docs](https://www.vertica.com/docs/12.0.x/HTML/Content/Authoring/ConnectingToVertica/ClientODBC/InstallingODBC.htm)
+You will need to have a Vertica ODBC driver installed from [Vertica-Client-Drivers](https://www.vertica.com/download/vertica/client-drivers/). For steps to install ODBC for Vertica, follow official [Vertica Docs](https://www.vertica.com/docs/12.0.x/HTML/Content/Authoring/ConnectingToVertica/ClientODBC/InstallingODBC.htm).
 
 For example, you will need to configure these files with your credentials:
 
@@ -161,4 +161,4 @@ finally:
 
 ```
 
-This should display the Vertica version info: "Vertica Analytic Database v12.0.0-0"
+This should display the Vertica version info: "Vertica Analytic Database v12.0.0-0".

@@ -1,11 +1,10 @@
 import sqlalchemy as sa
-engine = sa.create_engine('vertica+vertica_python://dbadmin:abc123@localhost:5433/VMart?session_label=sqlalchemy&tlsmode=server')   
-conn = engine.connect()
-res = engine.dialect._get_server_version_info(conn)
-print(res)
+vpyengine = sa.create_engine('vertica+vertica_python://dbadmin:abc123@localhost:5433/VMart?session_label=sqlalchemy&tlsmode=server')   
+vpyconn = vpyengine.connect()
+vpyres = vpyengine.dialect._get_server_version_info(vpyconn)
+print(vpyres)
 
-# import sqlalchemy as sa
-
-# engine = sa.create_engine('vertica+pyodbc://@verticadsn')
-# res = engine.connect().scalar('select version();')
-# print(res)
+vpyodbcengine = sa.create_engine('vertica+pyodbc://@verticadsn')
+vpyodbcconn= vpyodbcengine.connect()
+vpyodbcres = vpyodbcengine.dialect._get_server_version_info(vpyodbcconn)
+print(vpyodbcres)

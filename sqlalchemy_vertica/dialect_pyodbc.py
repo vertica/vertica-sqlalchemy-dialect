@@ -7,4 +7,10 @@ from .base import VerticaDialect as BaseVerticaDialect
 
 # noinspection PyAbstractClass, PyClassHasNoInit
 class VerticaDialect(PyODBCConnector, BaseVerticaDialect):
-    pass
+    driver = 'pyodbc'
+    supports_statement_cache = True
+
+    @classmethod
+    def dbapi(cls):
+        pyodbc = __import__('pyodbc')
+        return pyodbc

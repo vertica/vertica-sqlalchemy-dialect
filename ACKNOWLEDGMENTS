@@ -1,7 +1,7 @@
 THIS PROJECT IS THE MAINLY DERIVED FROM startappdev repo:
   - https://github.com/startappdev/sqlalchemy-vertica
 
-THIS PROJECT WAS ALSO DERIVED FROM THE  FOLLOWING PROJECTS:
+THIS PROJECT WAS ALSO DERIVED FROM THE FOLLOWING PROJECTS:
 
   - https://github.com/zzzeek/sqlalchemy
   - https://github.com/bluelabsio/vertica-sqlalchemy
