@@ -6,7 +6,8 @@ from .base import VerticaDialect as BaseVerticaDialect
 # noinspection PyAbstractClass, PyClassHasNoInit
 class VerticaDialect(BaseVerticaDialect):
     driver = 'vertica_python'
-    supports_statement_cache = True
+    # TODO: support SQL caching, for more info see: https://docs.sqlalchemy.org/en/14/core/connections.html#caching-for-third-party-dialects
+    supports_statement_cache = False
 
 
     @classmethod
