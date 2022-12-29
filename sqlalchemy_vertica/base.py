@@ -403,7 +403,7 @@ class VerticaDialect(default.DefaultDialect):
 
             # print("projection_count: " + str(projection_count)
             return {"projection_count": str(projection_count),
-                    'udx_list': str(udx_list), 'Udx_langauge': str(user_defined_library)}
+                    'udx_list': str(udx_list), 'udx_language': str(user_defined_library)}
 
             # return {"projection_count": "projection_count"}
 
@@ -460,7 +460,11 @@ class VerticaDialect(default.DefaultDialect):
             else:
                 TableSize = math.trunc(table_size['table_size'])
 
-        return {"text": "This Vertica module is still is development Process", "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
+        return {"text": "References the properties of a native table in Vertica. \
+        Vertica physically stores table data in projections, which are collections of table columns. \
+        Projections store data in a format that optimizes query execution. \
+        In order to query or perform any operation on a Vertica table, the table must have one or more projections associated with it. ", 
+        "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
 
 
 
@@ -1011,12 +1015,14 @@ class VerticaDialect(default.DefaultDialect):
             else:
                 cached_projection = "False"
 
-        return {"text": "This Vertica module is still under development for Projections",
+        return {"text": "Vertica physically stores table data in projections, \
+            which are collections of table columns. Projections store data in a format that optimizes query execution \
+            For more info on projections and corresponding properties check out the Vertica Docs: https://www.vertica.com/docs",
                 "properties": {"ROS Count": str(self._get_ros_count(connection, projection_name, schema=None)), "is_segmented": str(is_segmented),
                                "Projection Type": str(projection_type), "Partition Key": str(partition_key),
                                "Number of Partition": str(partition_number),
                                "Segmentation_key": segmentation_key,
-                               "Projection SIze": str(projection_size) + " KB",
+                               "Projection Size": str(projection_size) + " KB",
                                "Projection Cached": str(cached_projection)}}
         
     @reflection.cache
@@ -1086,7 +1092,10 @@ class VerticaDialect(default.DefaultDialect):
             attr_details_dict.update(value_final)
             attributes_details.append(attr_details_dict)
 
-        return {"text": "This Vertica module is still under development", "properties": {"used_by": str(used_by),
+        return {"text": "Vertica provides a number of machine learning functions for performing in-database analysis. \
+            These functions perform data preparation, model training, and predictive tasks. \
+            These properties shows the Model attributes and Specifications in the current schema.", 
+            "properties": {"used_by": str(used_by),
                 "Model Attributes": str(attr_name), "Model Specifications": str(attributes_details)}}
         
         
@@ -1135,7 +1144,9 @@ class VerticaDialect(default.DefaultDialect):
             address_priority = data['address_priority']
             is_fallthrough_enabled = data['is_fallthrough_enabled']
 
-        return {"text": "This Vertica module is still under development", "properties": {"discovery_url": str(discovery_url),
+        return {"text": "Vertica supports OAUTH based authentication. \
+            These properties are only visible in Datahub if you have access to the authorization table in Vertica. \
+            All the properties shown here are what Vertica uses for a client connecting via OAUTH.", "properties": {"discovery_url": str(discovery_url),
                 "client_id": str(client_id), "introspect_url": str(introspect_url), "auth_oid ": str(auth_oid), "client_secret": str(client_secret),
                 "is_auth_enabled": str(is_auth_enabled), "auth_priority": str(auth_priority), "address_priority": str(address_priority), "is_fallthrough_enabled": str(is_fallthrough_enabled), }}
 
