@@ -6,16 +6,16 @@
 
 Vertica dialect for SQLAlchemy uses the pure-Python DB-API driver vertica-python, to connect a Vertica database and SQLAlchemy applications.
 
-This repo was forked from a series of chained forks as outlined in the [Acknowledgement] (https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect/ACKNOWLEDGEMENTS).
+This repo was forked from a series of chained forks as outlined in the [Acknowledgement](https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect/ACKNOWLEDGEMENTS).
 
 ## Prerequisites
 
 You will need the following softwares to run, build and test the dialect. Everything apart from Python and pip can be installed via pip itself.
 
-    1. Python 3.x or higher
-    2. pip 22 or higher
-    3. SQLAlchemy 1.3.24 or higher
-    4. vertica-python 1.1.1 or higher
+1. Python 3.x or higher
+2. pip 22 or higher
+3. SQLAlchemy 1.3.24 or higher
+4. vertica-python 1.1.1 or higher
 
 ### Vertica-Python
 

@@ -1,0 +1,11 @@
+name: 'Run unittests'
+description: 'Runs test via pytest'
+runs:
+  using: "composite"
+  steps:
+    - name: Run tests
+      shell: bash
+      run: |
+        echo "Running unit tests.."
+        source venv/bin/activate
+        pytest -v
