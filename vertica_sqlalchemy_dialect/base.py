@@ -856,8 +856,6 @@ class VerticaDialect(default.DefaultDialect):
             pk_columns.append(columns)
 
         return {'constrained_columns': pk_columns, 'name': pk_columns}
-    
-
             
     # @reflection.cache
     def _get_extra_tags(
@@ -920,78 +918,64 @@ class VerticaDialect(default.DefaultDialect):
         
         return ros_count
     
-    @reflection.cache
-    def get_projection_comment(self, connection, projection_name, schema=None, **kw):
+    def _get_segmented(self, connection, projection_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(projection_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
         else:
             schema_condition = "1"
-
-       
-
         sig = sql.text(dedent("""
                 SELECT is_segmented 
                 FROM v_catalog.projections 
                 WHERE lower(projection_name) = '%(table)s'
             """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
-
-        spk = sql.text(dedent("""
-                SELECT   partition_key
-                FROM v_monitor.partitions
-                WHERE lower(projection_name) = '%(table)s'
-                LIMIT 1
-            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
-
-        spt = sql.text(dedent("""
-                SELECT is_super_projection,is_key_constraint_projection,is_aggregate_projection,has_expressions
-                FROM v_catalog.projections
-                WHERE lower(projection_name) = '%(table)s'
-            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
-
-        snp = sql.text(dedent("""
-                SELECT Count(ros_id) as np
-                FROM v_monitor.partitions
-                WHERE lower(projection_name) = '%(table)s'
-            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
-
+        
         ssk = sql.text(dedent("""
                 SELECT  segment_expression 
                 FROM v_catalog.projections
                 WHERE lower(projection_name) = '%(table)s'
             """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
 
-        sps = sql.text(dedent("""
-                SELECT ROUND(used_bytes // 1024)   AS used_bytes 
-                from v_monitor.projection_storage
-                WHERE lower(projection_name) = '%(table)s'
-            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
-
-        depot_pin_policy = sql.text(dedent("""
-                SELECT COUNT(*)
-                FROM DEPOT_PIN_POLICIES
-                WHERE lower(object_name) = '%(table)s'
-            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
-
-        ros_count = ""
-        partition_key = ""
-        is_segmented = ""
-        projection_type = []
-        partition_number = ""
-        segmentation_key = ""
-        projection_size = ""
-        cached_projection = ""
-
         for data in connection.execute(sig):
             is_segmented = data['is_segmented']
             if is_segmented:
                 for data in connection.execute(ssk):
                     segmentation_key = str(data)
+        
+        return is_segmented, segmentation_key
 
-       
-
+    def _get_partitionkey(self, connection, projection_name, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(projection_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
+        
+        spk = sql.text(dedent("""
+                SELECT   partition_key
+                FROM v_monitor.partitions
+                WHERE lower(projection_name) = '%(table)s'
+                LIMIT 1
+            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
+        
         for data in connection.execute(spk):
             partition_key = data['partition_key']
+
+        return partition_key
+    
+    def _get_projectiontype(self, connection, projection_name, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(projection_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
+        
+        projection_type=[]
+        spt = sql.text(dedent("""
+                SELECT is_super_projection,is_key_constraint_projection,is_aggregate_projection,has_expressions
+                FROM v_catalog.projections
+                WHERE lower(projection_name) = '%(table)s'
+            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
 
         for data in connection.execute(spt):
             lst = ["is_super_projection", "is_key_constraint_projection",
@@ -1003,27 +987,76 @@ class VerticaDialect(default.DefaultDialect):
                     projection_type.append(lst[i])
                 i += 1
 
+        return projection_type
+        
+    def _get_numpartitions(self, connection, projection_name, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(projection_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
+
+        snp = sql.text(dedent("""
+                SELECT Count(ros_id) as np
+                FROM v_monitor.partitions
+                WHERE lower(projection_name) = '%(table)s'
+            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
+        
         for data in connection.execute(snp):
             partition_number = data.np
+        
+        return partition_number
+
+    def _get_projectionsize(self, connection, projection_name, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(projection_schema) = '%(schema)s'" % {
+            'schema': schema.lower()}
+        else:
+            schema_condition = "1"
+
+        sps = sql.text(dedent("""
+            SELECT ROUND(used_bytes // 1024)   AS used_bytes 
+            from v_monitor.projection_storage
+            WHERE lower(projection_name) = '%(table)s'
+        """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
 
         for data in connection.execute(sps):
             projection_size = data['used_bytes']
+        
+        return projection_size
 
+    def _get_ifcachedproj(self, connection, projection_name, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(projection_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
+        depot_pin_policy = sql.text(dedent("""
+                SELECT COUNT(*)
+                FROM DEPOT_PIN_POLICIES
+                WHERE lower(object_name) = '%(table)s'
+            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
         for data in connection.execute(depot_pin_policy):
             if data[0] > 0:
-                cached_projection = "True"
+                cached_projection = True
             else:
-                cached_projection = "False"
+                cached_projection = False
+        return cached_projection
+
+    @reflection.cache
+    def get_projection_comment(self, connection, projection_name, schema=None, **kw):
 
         return {"text": "Vertica physically stores table data in projections, \
             which are collections of table columns. Projections store data in a format that optimizes query execution \
             For more info on projections and corresponding properties check out the Vertica Docs: https://www.vertica.com/docs",
-                "properties": {"ROS Count": str(self._get_ros_count(connection, projection_name, schema=None)), "is_segmented": str(is_segmented),
-                               "Projection Type": str(projection_type), "Partition Key": str(partition_key),
-                               "Number of Partition": str(partition_number),
-                               "Segmentation_key": segmentation_key,
-                               "Projection Size": str(projection_size) + " KB",
-                               "Projection Cached": str(cached_projection)}}
+                "properties": {"ROS Count": str(self._get_ros_count(connection, projection_name, schema=None)), 
+                                "is_segmented": str(self._get_segmented(connection, projection_name, schema=None)[0]),
+                               "Projection Type": str(self._get_projectiontype(connection, projection_name, schema=None)), 
+                               "Partition Key": str(self._get_partitionkey(connection, projection_name, schema=None)),
+                               "Number of Partition": str(self._get_numpartitions(connection, projection_name, schema=None)),
+                               "Segmentation_key": str(self._get_segmented(connection, projection_name, schema=None)[1]),
+                               "Projection Size": str(self._get_projectionsize(connection, projection_name, schema=None))+" KB",
+                               "Projection Cached": str(self._get_ifcachedproj(connection, projection_name, schema=None))}}
         
     @reflection.cache
     def get_model_comment(self, connection, model_name, schema=None, **kw):

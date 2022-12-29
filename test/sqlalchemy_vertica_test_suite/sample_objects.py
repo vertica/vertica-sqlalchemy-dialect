@@ -1,6 +1,6 @@
 sample_table_list = {"store":["store_orders_fact"],"public": ["customer_dimension","employee_dimension","product_dimension", "vendor_dimension"]}
 sample_temp_table = "sampletemp"
-sample_projection = "employee_super"
+sample_projections = ["employee_super", "store_orders_fact_super", "ytd_orders"]
 sample_view = "sampleview"
 sample_columns = [
     "product_key",

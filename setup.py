@@ -4,21 +4,21 @@ with open("README.rst", "r") as f:
     description = f.read()
 
 
-version_info = (0, 1, 3)
+version_info = (0, 1, 4)
 
 version = '.'.join(map(str, version_info))
 
 setup(
-    name='sqlalchemy-vertica-dialec',
+    name='vertica-sqlalchemy-dialect',
     version=version,
-    description='Vertica dialect for sqlalchemy',
+    description='Vertica dialect for SQLalchemy',
     long_description=description,
     license='MIT',
-    url='https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect.git',
-    download_url='https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect.git/tarball/%s' % (version,),
+    url='https://github.com/vertica/vertica-sqlalchemy-dialect.git',
+    download_url='https://github.com/vertica/vertica-sqlalchemy-dialect.git/tarball/%s' % (version,),
     author='Narendra Prabhu',
     packages=(
-        'sqlalchemy_vertica',
+        'vertica_sqlalchemy_dialect',
     ),
     install_requires=(
         'six >= 1.10.0',
@@ -37,9 +37,9 @@ setup(
     entry_points={
         'sqlalchemy.dialects': [
             'vertica.pyodbc = '
-            'sqlalchemy_vertica.dialect_pyodbc:VerticaDialect [pyodbc]',
+            'vertica_sqlalchemy_dialect.dialect_pyodbc:VerticaDialect [pyodbc]',
             'vertica.vertica_python = '
-            'sqlalchemy_vertica.dialect_vertica_python:VerticaDialect [vertica-python]',
+            'vertica_sqlalchemy_dialect.dialect_vertica_python:VerticaDialect [vertica-python]',
         ]
     }
 )

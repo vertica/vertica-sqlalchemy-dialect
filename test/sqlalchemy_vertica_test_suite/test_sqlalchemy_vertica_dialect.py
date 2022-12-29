@@ -66,7 +66,7 @@ def test_get_projection_names(vconn):
     # Assert the no. of projections
     assert len(res) == 41
     # Assert sample projection
-    assert sample.sample_projection in res
+    assert sample.sample_projections[0] in res
 
 def test_get_table_names(vconn):
     res = vconn[0].dialect.get_table_names(connection=vconn[1], schema="public")
@@ -186,6 +186,42 @@ def test_get_extra_tags(vconn):
 def test_get_ros_count(vconn):
     rc = vconn[0].dialect._get_ros_count(vconn[1], projection_name="employee_dimension_super", name="table", schema="public")
     assert rc>0
+
+def test_get_segmented(vconn):
+    isseg = vconn[0].dialect._get_segmented(vconn[1], projection_name=sample.sample_projections[1], schema="store")
+    assert isseg[0] in [True,False]
+    assert isseg[1]
+
+def test_get_partitionkey(vconn):
+    pc = vconn[0].dialect._get_partitionkey(vconn[1], projection_name=sample.sample_projections[2], schema="store")
+    assert pc
+
+def test_get_projectiontype(vconn):
+    pt = vconn[0].dialect._get_projectiontype(vconn[1], projection_name=sample.sample_projections[1], schema="store")
+    assert pt == ['is_super_projection']
+
+def test_get_numpartitions(vconn):
+    pn = vconn[0].dialect._get_numpartitions(vconn[1], projection_name=sample.sample_projections[1], schema="store")
+    assert pn>0
+
+def test_get_projectionsize(vconn):
+    ps = vconn[0].dialect._get_projectionsize(vconn[1], projection_name=sample.sample_projections[1], schema="store")
+    assert ps>0
+
+def test_get_ifcachedproj(vconn):
+    cp = vconn[0].dialect._get_ifcachedproj(vconn[1], projection_name=sample.sample_projections[1], schema="store")
+    assert cp in [True,False]
+
+def test_get_projection_comment(vconn):
+    pc = vconn[0].dialect.get_projection_comment(vconn[1], projection_name=sample.sample_projections[1], schema="store")
+    assert pc["properties"]["ROS Count"]\
+    and pc["properties"]["is_segmented"] \
+    and pc["properties"]["Projection Type"] \
+    and pc["properties"]["Partition Key"] \
+    and pc["properties"]["Number of Partition"] \
+    and pc["properties"]["Segmentation_key"] \
+    and pc["properties"]["Projection Size"] \
+    and pc["properties"]["Projection Cached"]
 
 def test_get_model_comment(vconn):
     mc = vconn[0].dialect.get_model_comment(vconn[1], model_name=sample.sample_ml_model, schema="public")
