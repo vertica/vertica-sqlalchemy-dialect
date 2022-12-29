@@ -654,21 +654,11 @@ class VerticaDialect(default.DefaultDialect):
                     FROM v_catalog.constraint_columns
                     WHERE table_name = '%(table)s' AND table_schema = '%(schema)s'
                     """
-                    % {"schema": schema, "table": table_name}
+                    % {"schema": schema.lower(), "table": table_name.lower()}
                 )
             )
         c = connection.execute(get_constraints_sql)
-        if c.rowcount <= 0:
-            return []
-
-        constraints, columns = zip(*c)
-        result_dict = {
-            unique_con: [col for con, col in zip(
-                constraints, columns) if con == unique_con]
-            for unique_con in set(constraints)
-        }
-
-        return [{"name": name, "column_names": cols} for name, cols in result_dict.items()]
+        return [{'name': name, 'column_names': cols} for name, cols in c.fetchall()]
 
 
     @reflection.cache

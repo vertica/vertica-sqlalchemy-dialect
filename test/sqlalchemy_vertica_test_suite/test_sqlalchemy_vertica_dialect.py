@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql import sqltypes
 import pytest
 import re 
-import test.sampleobjects as sample
+import test.sqlalchemy_vertica_test_suite.sample_objects as sample
 
 @pytest.fixture(scope="module")
 def vconn():
@@ -121,12 +121,14 @@ def test_get_columns(vconn):
 def test_get_unique_constraints(vconn):
     # TODO query doesnt return the result here. Query works from other clients.
     assert True
-    # res = vconn[0].dialect.get_unique_constraints(connection=vconn[1], table_name=sample_table_list["store"][0], schema="store")
-    # # Assert the no. of unique contraints
-    # assert len(res)>0
-    # # Assert sample constraint
-    # assert all(k["names"] in sample_columns.keys() for k in res)
-    # assert all(v["columns"] in sample_columns.values() for v in res)
+    ucons = vconn[0].dialect.get_unique_constraints(connection=vconn[1], table_name=sample.sample_table_list["store"][0], schema="store")
+    # Assert the no. of unique contraints
+    assert len(ucons)>0
+    # Assert sample constraint
+    for v in sample.sample_constraints.values():
+        print(v)
+    for ucon in ucons:
+        assert (ucon['name'],ucon['column_names'] in sample.sample_constraints)
 
 def test_get_check_constraints(vconn):
     # TODO query doesnt return the result here. Query works from other clients.
@@ -145,7 +147,6 @@ def test_normalize_name(vconn):
 def test_denormalize_name(vconn):
     assert vconn[0].dialect.denormalize_name("SAMPLE_TABLE123") == "SAMPLE_TABLE123"
     assert vconn[0].dialect.denormalize_name("saMPLE_123") == "saMPLE_123"
-
 
 def test_get_pk_constraint(vconn):
     # TODO query doesnt return the result here. Query works from other clients.
@@ -176,20 +177,6 @@ def test_get_models_names(vconn):
     res = vconn[0].dialect.get_models_names(vconn[1], schema="public")
     # Assert model names
     assert all(value in sample.sample_model_list for value in res)
-
-# def test_get_properties_keys(vconn):
-#     db_keys = vconn[0].dialect._get_properties_keys(vconn[1], db_name="vmart", schema="public", level="database")
-#     sc_keys = vconn[0].dialect._get_properties_keys(vconn[1], db_name="vmart", schema="public", level="schema")
-#     # Assert the schema level properties
-#     assert sc_keys["projection_count"] > 0
-#     assert len(sc_keys["udx_list"]) > 0
-#     assert len(sc_keys["udx_language"]) > 0
-#     # Assert the database level properties
-#     gb = re.compile(r'[0-9]+ GB')
-#     assert db_keys["cluster_type"] == "Enterprise"
-#     assert bool(gb.match(db_keys["cluster_size"]))
-#     assert db_keys["subcluster"] == ' '
-#     assert len(db_keys["communal_storage_path"])==0
 
 def test_get_extra_tags(vconn):
     extra_tags = vconn[0].dialect._get_extra_tags(vconn[1], name="table", schema="public")
