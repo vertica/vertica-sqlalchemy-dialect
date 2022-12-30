@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql import sqltypes
 import pytest
 import re 
-import test.sqlalchemy_vertica_test_suite.sample_objects as sample
+from . import sample_objects as sample
 
 @pytest.fixture(scope="module")
 def vconn():

@@ -8,4 +8,4 @@ runs:
       run: |
         echo "Running unit tests.."
         source venv/bin/activate
-        pytest -v
+        python -m pytest -v test/test_integration.py

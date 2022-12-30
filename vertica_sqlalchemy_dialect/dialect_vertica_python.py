@@ -9,7 +9,6 @@ class VerticaDialect(BaseVerticaDialect):
     # TODO: support SQL caching, for more info see: https://docs.sqlalchemy.org/en/14/core/connections.html#caching-for-third-party-dialects
     supports_statement_cache = False
 
-
     @classmethod
     def dbapi(cls):
         vertica_python = __import__('vertica_python')
