@@ -48,7 +48,7 @@ CREATE TEMPORARY TABLE sampletemp (a int, b int) ON COMMIT PRESERVE ROWS;
 INSERT INTO sampletemp VALUES(1,2);
 
 -- Create partiton key
-CREATE IF NOT EXISTS PROJECTION store.ytd_orders
+CREATE PROJECTION IF NOT EXISTS store.ytd_orders
 (
  product_key,
  product_version,
