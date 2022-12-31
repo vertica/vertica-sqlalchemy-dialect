@@ -93,7 +93,7 @@ def _create_users_addresses_tables_without_sequence(engine_test, metadata):
         Column("user_id", None, ForeignKey("users.id")),
         Column("email_address", String, nullable=False),
     )
-    metadata.create_all(engine_test)
+    metadata.create_all()
     return users, addresses
 
 def test_verify_engine_connection(engine_test):
@@ -111,25 +111,25 @@ def test_simple_sql(engine_test):
     assert result.lower() == DEFAULT_PARAMETERS["database"].lower()
 
 # @TODO Fix the test  as create table fails
-# def test_create_drop_tables(engine_test):
-#     """
-#     Creates and Drops tables
-#     """
-#     metadata = MetaData()
-#     users, addresses = _create_users_addresses_tables_without_sequence(
-#         engine_test, metadata
-#     )
+def test_create_drop_tables(engine_test):
+    """
+    Creates and Drops tables
+    """
+    metadata = MetaData(engine_test)
+    users, addresses = _create_users_addresses_tables_without_sequence(
+        engine_test, metadata
+    )
 
-#     try:
-#         # validate the tables exists
-#         with engine_test.connect() as conn:
-#             results = conn.execute(sql.text("select * from %(schema)s.users;" % {'schema': TEST_SCHEMA.lower()}))
-#             assert len([row for row in results]) > 0, "users table doesn't exist"
+    try:
+        # validate the tables exists
+        with engine_test.connect() as conn:
+            results = conn.execute(sql.text("select * from %(schema)s.users;" % {'schema': TEST_SCHEMA.lower()}))
+            assert len([row for row in results]) > 0, "users table doesn't exist"
 
-#             # # validate the tables exists
-#             # results = conn.execute(sql.text("desc table addresses"))
-#             # assert len([row for row in results]) > 0, "addresses table doesn't exist"
-#     finally:
-#         # drop tables
-#         addresses.drop(engine_test)
-#         users.drop(engine_test)
+            # # validate the tables exists
+            # results = conn.execute(sql.text("desc table addresses"))
+            # assert len([row for row in results]) > 0, "addresses table doesn't exist"
+    finally:
+        # drop tables
+        addresses.drop(engine_test)
+        users.drop(engine_test)

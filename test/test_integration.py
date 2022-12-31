@@ -43,7 +43,12 @@ def test_has_type(vconn):
 
 def test_get_schema_names(vconn):
     res = vconn[0].dialect.get_schema_names(connection=vconn[1])
-    assert len(res) == 3
+    sc=0
+    # By pass schema if schema created by conftest. TODO Handle this in conftest
+    for s in res:
+        if "sqlalchemy_tests_" not in s:
+            sc+=1
+    assert sc == 3
     assert "store" in res
 
 # TODO Improve this function to verify the output with a regex match
