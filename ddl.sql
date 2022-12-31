@@ -47,3 +47,50 @@ SELECT tokenize(phrase) OVER () FROM phrases;
 CREATE TEMPORARY TABLE sampletemp (a int, b int) ON COMMIT PRESERVE ROWS;
 INSERT INTO sampletemp VALUES(1,2);
 
+-- Create partiton key
+CREATE IF NOT EXISTS PROJECTION store.ytd_orders
+(
+ product_key,
+ product_version,
+ store_key,
+ vendor_key,
+ employee_key,
+ order_number,
+ date_ordered,
+ date_shipped,
+ expected_delivery_date,
+ date_delivered,
+ quantity_ordered,
+ quantity_delivered,
+ shipper_name,
+ unit_price,
+ shipping_cost,
+ total_order_cost,
+ quantity_in_stock,
+ reorder_level,
+ overstock_ceiling
+)
+AS
+ SELECT store_orders_fact.product_key,
+        store_orders_fact.product_version,
+        store_orders_fact.store_key,
+        store_orders_fact.vendor_key,
+        store_orders_fact.employee_key,
+        store_orders_fact.order_number,
+        store_orders_fact.date_ordered,
+        store_orders_fact.date_shipped,
+        store_orders_fact.expected_delivery_date,
+        store_orders_fact.date_delivered,
+        store_orders_fact.quantity_ordered,
+        store_orders_fact.quantity_delivered,
+        store_orders_fact.shipper_name,
+        store_orders_fact.unit_price,
+        store_orders_fact.shipping_cost,
+        store_orders_fact.total_order_cost,
+        store_orders_fact.quantity_in_stock,
+        store_orders_fact.reorder_level,
+        store_orders_fact.overstock_ceiling
+ FROM store.store_orders_fact
+ ORDER BY store_orders_fact.date_ordered
+SEGMENTED BY hash(store_orders_fact.product_key, store_orders_fact.product_version, store_orders_fact.store_key, store_orders_fact.vendor_key, store_orders_fact.employee_key, store_orders_fact.order_number, store_orders_fact.date_ordered, store_orders_fact.date_shipped, store_orders_fact.expected_delivery_date, store_orders_fact.date_delivered, store_orders_fact.quantity_ordered, store_orders_fact.quantity_delivered, store_orders_fact.shipper_name, store_orders_fact.unit_price, store_orders_fact.shipping_cost, store_orders_fact.total_order_cost, store_orders_fact.quantity_in_stock, store_orders_fact.reorder_level, store_orders_fact.overstock_ceiling) ALL NODES OFFSET 0 ON PARTITION RANGE BETWEEN (date_trunc('year', now()))::date AND NULL;
+

@@ -93,7 +93,7 @@ def _create_users_addresses_tables_without_sequence(engine_test, metadata):
         Column("user_id", None, ForeignKey("users.id")),
         Column("email_address", String, nullable=False),
     )
-    metadata.create_all()
+    metadata.create_all(engine_test)
     return users, addresses
 
 def test_verify_engine_connection(engine_test):
