@@ -133,7 +133,7 @@ def test_get_unique_constraints(vconn):
     for v in sample.sample_constraints.values():
         print(v)
     for ucon in ucons:
-        assert (ucon['name'],ucon['column_names'] in sample.sample_constraints)
+        assert ucon['name'],ucon['column_names'] in sample.sample_constraints
 
 def test_get_check_constraints(vconn):
     # TODO query doesnt return the result here. Query works from other clients.
