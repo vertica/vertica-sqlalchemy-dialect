@@ -120,7 +120,7 @@ def get_engine(user=None, password=None, host=None, port=None, database=None):
         port=ret["port"],
         database=ret["database"],
     ),
-    poolclass=NullPool)
+    poolclass=NullPool, echo=True)
 
     return engine, ret
 

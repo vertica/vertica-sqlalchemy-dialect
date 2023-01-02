@@ -86,7 +86,6 @@ def test_get_table_names(vconn):
     # Assert sample tables
     assert all(value in res  for value in sample.sample_table_list["store"])
 
-
 def test_get_temp_table_names(vconn):
     res = vconn[0].dialect.get_temp_table_names(connection=vconn[1], schema="public")
     # Assert the no. of temp tables
