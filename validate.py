@@ -9,8 +9,7 @@ import sqlalchemy as sa
 # vpyodbcres = vpyodbcengine.dialect._get_server_version_info(vpyodbcconn)
 # print(vpyodbcres)
 
-
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Sequence, ForeignKey, PrimaryKeyConstraint, UniqueConstraint
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Sequence, ForeignKey, PrimaryKeyConstraint, UniqueConstraint, sql
 engine = create_engine('vertica+vertica_python://dbadmin:abc123@localhost:5433/VMart?session_label=sqlalchemy', echo = True)
 meta = MetaData()
 
@@ -36,5 +35,16 @@ addresses = Table(
         PrimaryKeyConstraint("id"),
         UniqueConstraint("email_address"),
     )
+
 meta.create_all(engine)
+with engine.connect() as conn:
+   try:
+      with conn.begin():
+         results = conn.execute(
+                           users.insert().values(name="jack", fullname="Jack Jones")
+                        )
+         print(results.rowcount)
+   finally:
+      conn.close()
+         
 meta.drop_all(engine)

@@ -231,7 +231,6 @@ class VerticaInspector(reflection.Inspector):
             self.bind, schema , **kw
         )
  
-
 # noinspection PyArgumentList,PyAbstractClass
 class VerticaDialect(default.DefaultDialect):
 

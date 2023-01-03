@@ -38,7 +38,7 @@ from vertica_python import Error, ProgrammingError, connect
 
 # from vertica_sqlalchemy_dialect._constants import (
 #     APPLICATION_NAME,
-#     SNOWFLAKE_SQLALCHEMY_VERSION,
+#     VERTICA_SQLALCHEMY_VERSION,
 # )
 from vertica_sqlalchemy_dialect.dialect_vertica_python import VerticaDialect as dialect
 
@@ -46,12 +46,11 @@ from .conftest import create_engine_with_future_flag as create_engine
 from .conftest import get_engine
 from .conftest import DEFAULT_PARAMETERS
 from .conftest import TEST_SCHEMA
-from .util import ischema_names_baseline, random_string, _url as URL
+from .util import _url as URL
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 
 PST_TZ = "America/New_York"
-JST_TZ = "Asia/Tokyo"
 
 
 def _create_users_addresses_tables(
@@ -135,85 +134,82 @@ def test_create_drop_tables(engine_test):
         addresses.drop(engine_test)
         users.drop(engine_test)
 
-# def test_insert_tables(engine_test):
-#     """
-#     Inserts data into tables
-#     """
-#     metadata = MetaData(schema=TEST_SCHEMA)
-#     users, addresses = _create_users_addresses_tables(engine_test, metadata)
+def test_insert_tables(engine_test):
+    """
+    Inserts data into tables
+    """
+    metadata = MetaData(schema=TEST_SCHEMA)
+    users, addresses = _create_users_addresses_tables(engine_test, metadata)
 
-#     with engine_test.connect() as conn:
-#         try:
-#             with conn.begin():
-#                 # inserts data with an implicitly generated id
-#                 results = conn.execute(
-#                     users.insert().values(name="jack", fullname="Jack Jones")
-#                 )
-#                 # Note: SQLAlchemy 1.4 changed what ``inserted_primary_key`` returns
-#                 #  a cast is here to make sure the test works with both older and newer
-#                 #  versions
-#                 # assert list(results.inserted_primary_key) == [1], "sequence value"
-#                 results.close()
+    with engine_test.connect() as conn:
+        try:
+            with conn.begin():
+                # inserts data with an implicitly generated id
+                results = conn.execute(
+                    users.insert().values(name="jack", fullname="Jack Jones")
+                )
+                # Note: SQLAlchemy 1.4 changed what ``inserted_primary_key`` returns
+                #  a cast is here to make sure the test works with both older and newer
+                #  versions
+                # inserts data with the given id
+                conn.execute(
+                    users.insert(),
+                    {"name": "wendy", "fullname": "Wendy Williams"},
+                )
 
-#                 # inserts data with the given id
-#                 conn.execute(
-#                     users.insert(),
-#                     {"id": 2, "name": "wendy", "fullname": "Wendy Williams"},
-#                 )
+                # verify the results
+                results = conn.execute(select(users))
+                assert (
+                    len([row for row in results]) == 2
+                ), "number of rows from users table"
+                results.close()
 
-#                 # verify the results
-#                 results = conn.execute(select(users))
-#                 assert (
-#                     len([row for row in results]) == 2
-#                 ), "number of rows from users table"
-#                 results.close()
+                # fetchone
+                results = conn.execute(select(users).order_by("id"))
+                row = results.fetchone()
+                results.close()
+                assert row._mapping._data[2] == "Jack Jones", "user name"
+                assert row._mapping["fullname"] == "Jack Jones", "user name by dict"
+                assert (
+                    row._mapping[users.c.fullname] == "Jack Jones"
+                ), "user name by Column object"
 
-#                 # fetchone
-#                 results = conn.execute(select(users).order_by("id"))
-#                 row = results.fetchone()
-#                 results.close()
-#                 assert row._mapping._data[2] == "Jack Jones", "user name"
-#                 assert row._mapping["fullname"] == "Jack Jones", "user name by dict"
-#                 assert (
-#                     row._mapping[users.c.fullname] == "Jack Jones"
-#                 ), "user name by Column object"
+                conn.execute(
+                    addresses.insert(),
+                    [
+                        {"user_id": 1, "email_address": "jack@yahoo.com"},
+                        {"user_id": 1, "email_address": "jack@msn.com"},
+                        {"user_id": 2, "email_address": "www@www.org"},
+                        {"user_id": 2, "email_address": "wendy@aol.com"},
+                    ],
+                )
 
-#                 conn.execute(
-#                     addresses.insert(),
-#                     [
-#                         {"user_id": 1, "email_address": "jack@yahoo.com"},
-#                         {"user_id": 1, "email_address": "jack@msn.com"},
-#                         {"user_id": 2, "email_address": "www@www.org"},
-#                         {"user_id": 2, "email_address": "wendy@aol.com"},
-#                     ],
-#                 )
+                # more records
+                results = conn.execute(select(addresses))
+                assert (
+                    len([row for row in results]) == 4
+                ), "number of rows from addresses table"
+                results.close()
 
-#                 # more records
-#                 results = conn.execute(select(addresses))
-#                 assert (
-#                     len([row for row in results]) == 4
-#                 ), "number of rows from addresses table"
-#                 results.close()
+                # select specified column names
+                results = conn.execute(
+                    select(users.c.name, users.c.fullname).order_by("name")
+                )
+                results.fetchone()
+                row = results.fetchone()
+                assert row._mapping["name"] == "wendy", "name"
 
-#                 # select specified column names
-#                 results = conn.execute(
-#                     select(users.c.name, users.c.fullname).order_by("name")
-#                 )
-#                 results.fetchone()
-#                 row = results.fetchone()
-#                 assert row._mapping["name"] == "wendy", "name"
+                # join
+                results = conn.execute(
+                    select(users, addresses).where(users.c.id == addresses.c.user_id)
+                )
+                results.fetchone()
+                results.fetchone()
+                results.fetchone()
+                row = results.fetchone()
+                assert row._mapping["email_address"] == "wendy@aol.com", "email address"
 
-#                 # join
-#                 results = conn.execute(
-#                     select(users, addresses).where(users.c.id == addresses.c.user_id)
-#                 )
-#                 results.fetchone()
-#                 results.fetchone()
-#                 results.fetchone()
-#                 row = results.fetchone()
-#                 assert row._mapping["email_address"] == "wendy@aol.com", "email address"
-
-#         finally:
-#             # drop tables
-#             addresses.drop(engine_test)
-#             users.drop(engine_test)
+        finally:
+            # drop tables
+            addresses.drop(engine_test)
+            users.drop(engine_test)

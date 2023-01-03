@@ -8,6 +8,8 @@ class VerticaDialect(BaseVerticaDialect):
     driver = 'vertica_python'
     # TODO: support SQL caching, for more info see: https://docs.sqlalchemy.org/en/14/core/connections.html#caching-for-third-party-dialects
     supports_statement_cache = False
+    # No lastrowid support. TODO support SELECT LAST_INSERT_ID();
+    postfetch_lastrowid = False
 
     @classmethod
     def dbapi(cls):

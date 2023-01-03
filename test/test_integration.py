@@ -46,7 +46,7 @@ def test_get_schema_names(vconn):
     sc=0
     # By pass schema if schema created by conftest. TODO Handle this in conftest
     for s in res:
-        if "sqlalchemy_tests_" not in s:
+        if "test" not in s:
             sc+=1
     assert sc == 3
     assert "store" in res
