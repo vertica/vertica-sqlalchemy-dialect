@@ -2,7 +2,7 @@ from sqlalchemy.testing.requirements import SuiteRequirements
 
 from sqlalchemy.testing import exclusions
 
-#@TODO Check what these do
+# @TODO These are just sample tests. We plan to add more refined tests in future releases
 class Requirements(SuiteRequirements):
     @property
     def table_ddl_if_exists(self):

@@ -53,49 +53,49 @@ THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 PST_TZ = "America/New_York"
 
 
-def _create_users_addresses_tables(
+def _create_employee_emails_tables(
     engine_test, metadata, fk=None, pk=None, uq=None
 ):
-    users = Table(
-        "users",
+    employee = Table(
+        "employee",
         metadata,
-        Column("id", Integer, Sequence("user_id_seq"), primary_key=True),
+        Column("id", Integer, Sequence("emp_id_seq"), primary_key=True),
         Column("name", String),
-        Column("fullname", String),
+        Column("full_name", String),
     )
 
-    addresses = Table(
-        "addresses",
+    emails = Table(
+        "emails",
         metadata,
-        Column("id", Integer, Sequence("address_id_seq")),
-        Column("user_id", None, ForeignKey("users.id", name=fk)),
+        Column("id", Integer, Sequence("email_id_seq")),
+        Column("employee_id", None, ForeignKey("employee.id", name=fk)),
         Column("email_address", String, nullable=False),
         PrimaryKeyConstraint("id", name=pk),
         UniqueConstraint("email_address", name=uq),
     )
     metadata.create_all(engine_test)
-    return users, addresses
+    return employee, emails
 
-def _create_users_addresses_tables_without_sequence(engine_test, metadata):
-    users = Table(
-        "users",
+def _create_employee_emails_tables_without_sequence(engine_test, metadata):
+    employee = Table(
+        "employee",
         metadata,
         Column("id", Integer, primary_key=True),
         Column("name", String),
-        Column("fullname", String),
+        Column("full_name", String),
         schema=TEST_SCHEMA,
     )
 
-    addresses = Table(
-        "addresses",
+    emails = Table(
+        "emails",
         metadata,
         Column("id", Integer, primary_key=True),
-        Column("user_id", None, ForeignKey("%(schema)s.users.id" % {'schema': TEST_SCHEMA})),
+        Column("employee_id", None, ForeignKey("%(schema)s.employee.id" % {'schema': TEST_SCHEMA})),
         Column("email_address", String, nullable=False),
         schema=TEST_SCHEMA,
     )
     metadata.create_all(engine_test)
-    return users, addresses
+    return employee, emails
 
 def test_verify_engine_connection(engine_test):
     with engine_test.connect() as conn:
@@ -116,100 +116,94 @@ def test_create_drop_tables(engine_test):
     Creates and Drops tables
     """
     metadata = MetaData(engine_test)
-    users, addresses = _create_users_addresses_tables_without_sequence(
+    employee, emails = _create_employee_emails_tables_without_sequence(
         engine_test, metadata
     )
 
     try:
         # validate the tables exists
         with engine_test.connect() as conn:
-            chckuser = conn.execute(sql.text("select * from tables where table_schema ilike '%(schema)s' and table_name ilike '%(table)s';" % {'schema': TEST_SCHEMA, 'table': 'users'}))
-            assert len([row for row in chckuser]) > 0, "users table doesn't exist"
+            chckuser = conn.execute(sql.text("select * from tables where table_schema ilike '%(schema)s' and table_name ilike '%(table)s';" % {'schema': TEST_SCHEMA, 'table': 'employee'}))
+            assert len([row for row in chckuser]) > 0, "employee table doesn't exist"
 
             # validate the tables exists
-            chckaddr = conn.execute(sql.text("select * from tables where table_schema ilike '%(schema)s' and table_name ilike '%(table)s';" % {'schema': TEST_SCHEMA, 'table': 'addresses'}))
-            assert len([row for row in chckaddr]) > 0, "addresses table doesn't exist"
+            chckaddr = conn.execute(sql.text("select * from tables where table_schema ilike '%(schema)s' and table_name ilike '%(table)s';" % {'schema': TEST_SCHEMA, 'table': 'emails'}))
+            assert len([row for row in chckaddr]) > 0, "emails table doesn't exist"
     finally:
         # drop tables
-        addresses.drop(engine_test)
-        users.drop(engine_test)
+        emails.drop(engine_test)
+        employee.drop(engine_test)
 
 def test_insert_tables(engine_test):
     """
     Inserts data into tables
     """
     metadata = MetaData(schema=TEST_SCHEMA)
-    users, addresses = _create_users_addresses_tables(engine_test, metadata)
+    employee, emails = _create_employee_emails_tables(engine_test, metadata)
 
     with engine_test.connect() as conn:
         try:
             with conn.begin():
                 # inserts data with an implicitly generated id
                 results = conn.execute(
-                    users.insert().values(name="jack", fullname="Jack Jones")
+                    employee.insert().values(name="John", full_name="John Doe")
                 )
-                # Note: SQLAlchemy 1.4 changed what ``inserted_primary_key`` returns
-                #  a cast is here to make sure the test works with both older and newer
-                #  versions
-                # inserts data with the given id
                 conn.execute(
-                    users.insert(),
-                    {"name": "wendy", "fullname": "Wendy Williams"},
+                     employee.insert().values(name="Jaden", full_name="Jaden Smith")
                 )
-
                 # verify the results
-                results = conn.execute(select(users))
+                results = conn.execute(select(employee))
                 assert (
                     len([row for row in results]) == 2
-                ), "number of rows from users table"
+                ), "number of rows from employee table"
                 results.close()
 
                 # fetchone
-                results = conn.execute(select(users).order_by("id"))
+                results = conn.execute(select(employee).order_by("id"))
                 row = results.fetchone()
                 results.close()
-                assert row._mapping._data[2] == "Jack Jones", "user name"
-                assert row._mapping["fullname"] == "Jack Jones", "user name by dict"
+                assert row._mapping._data[2] == "John Doe", "Employee name"
+                assert row._mapping["full_name"] == "John Doe", "Employee name by dict"
                 assert (
-                    row._mapping[users.c.fullname] == "Jack Jones"
-                ), "user name by Column object"
+                    row._mapping[employee.c.full_name] == "John Doe"
+                ), "employee name by Column object"
 
                 conn.execute(
-                    addresses.insert(),
+                    emails.insert(),
                     [
-                        {"user_id": 1, "email_address": "jack@yahoo.com"},
-                        {"user_id": 1, "email_address": "jack@msn.com"},
-                        {"user_id": 2, "email_address": "www@www.org"},
-                        {"user_id": 2, "email_address": "wendy@aol.com"},
+                        {"employee_id": 1, "email_address": "john@gmail.com"},
+                        {"employee_id": 1, "email_address": "jaden@hotmail.com"},
+                        {"employee_id": 2, "email_address": "www@www.org"},
+                        {"employee_id": 2, "email_address": "jaden@abc.com"},
                     ],
                 )
 
                 # more records
-                results = conn.execute(select(addresses))
+                results = conn.execute(select(emails))
                 assert (
                     len([row for row in results]) == 4
-                ), "number of rows from addresses table"
+                ), "number of rows from emails table"
                 results.close()
 
                 # select specified column names
                 results = conn.execute(
-                    select(users.c.name, users.c.fullname).order_by("name")
+                    select(employee.c.name, employee.c.full_name).order_by("name")
                 )
                 results.fetchone()
                 row = results.fetchone()
-                assert row._mapping["name"] == "wendy", "name"
+                assert row._mapping["name"] == "John", "name"
 
                 # join
                 results = conn.execute(
-                    select(users, addresses).where(users.c.id == addresses.c.user_id)
+                    select(employee, emails).where(employee.c.id == emails.c.employee_id)
                 )
                 results.fetchone()
                 results.fetchone()
                 results.fetchone()
                 row = results.fetchone()
-                assert row._mapping["email_address"] == "wendy@aol.com", "email address"
+                assert row._mapping["email_address"] == "jaden@abc.com", "email address"
 
         finally:
             # drop tables
-            addresses.drop(engine_test)
-            users.drop(engine_test)
+            emails.drop(engine_test)
+            employee.drop(engine_test)

@@ -1,5 +1,5 @@
 # # test/test_suite.py
-# #@TODO Integrate SQLAlchemy tests
+# #@TODO Integrate SQLAlchemy tests in future releeases
 # from sqlalchemy.testing.suite import *
 
 # from sqlalchemy.testing.suite import IntegerTest as _IntegerTest
