@@ -38,14 +38,14 @@ class InsertBehaviorTest(_InsertBehaviorTest):
 
 
 class HasSequenceTest(_HasSequenceTest):
-    # Override the define_tables method as snowflake does not support 'nomaxvalue'/'nominvalue'
+    # Example of overriding tables
     @classmethod
     def define_tables(cls, metadata):
-        Sequence("user_id_seq", metadata=metadata)
-        Sequence("other_seq", metadata=metadata)
+        Sequence("seq1", metadata=metadata)
+        Sequence("seq2", metadata=metadata)
         if testing.requires.schemas.enabled:
-            Sequence("user_id_seq", schema=config.test_schema, metadata=metadata)
-            Sequence("schema_seq", schema=config.test_schema, metadata=metadata)
+            Sequence("seq1", schema=config.test_schema, metadata=metadata)
+            Sequence("seq2", schema=config.test_schema, metadata=metadata)
         Table(
             "user_id_table",
             metadata,
