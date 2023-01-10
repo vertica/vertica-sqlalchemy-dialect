@@ -195,7 +195,7 @@ class VerticaInspector(reflection.Inspector):
             self.bind, schema, info_cache=self.info_cache
         )
 
-    def get_oauth_comment(self, _name, schema=None, **kw):
+    def get_oauth_comment(self, oauth, schema=None, **kw):
         """Return information about the O Auth properties .
             as key and value.
 
@@ -205,7 +205,7 @@ class VerticaInspector(reflection.Inspector):
         """
 
         return self.dialect.get_oauth_comment(
-            self.bind, _name, schema, info_cache=self.info_cache, **kw
+            self.bind, oauth, schema, info_cache=self.info_cache, **kw
         )
 
     def _get_database_properties(self, db_name,  **kw):
