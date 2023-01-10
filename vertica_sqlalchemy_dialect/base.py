@@ -800,6 +800,7 @@ class VerticaDialect(default.DefaultDialect):
             nullable=is_nullable,
             default=default,
             autoincrement=autoincrement,
+            comment=str(default)
         )
         return column_info
 
