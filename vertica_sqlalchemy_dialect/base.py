@@ -371,7 +371,7 @@ class VerticaDialect(default.DefaultDialect):
                 from 
                     v_catalog.projections 
                 WHERE lower(projection_schema) = '%(schema)s'
-            """ % {"schema": schema}))
+            """ % {"schema": schema.lower()}))
 
             projection_count = None
             for each in connection.execute(projection_count_query):
@@ -381,7 +381,7 @@ class VerticaDialect(default.DefaultDialect):
                 SELECT lib_name , description 
                     FROM USER_LIBRARIES
                 WHERE lower(schema_name) = '%(schema)s'
-            """ % {"schema": schema}))
+            """ % {"schema": schema.lower()}))
 
             # UDX list
             UDX_functions_qry = sql.text(dedent("""
@@ -390,7 +390,7 @@ class VerticaDialect(default.DefaultDialect):
                 FROM 
                     USER_FUNCTIONS
                 Where schema_name  = '%(schema)s'
-            """ % {'schema': schema, }))
+            """ % {'schema': schema.lower(), }))
             udx_list = ""
             for each in connection.execute(UDX_functions_qry):
                 udx_list += each.function_name + ", "
@@ -812,7 +812,7 @@ class VerticaDialect(default.DefaultDialect):
             FROM models
             WHERE lower(schema_name) =  '%(schema)s'
             ORDER BY model_name
-        """ % {'schema': schema}))
+        """ % {'schema': schema.lower()}))
 
         c = connection.execute(get_models_sql)
 
@@ -824,7 +824,7 @@ class VerticaDialect(default.DefaultDialect):
             SELECT auth_name from v_catalog.client_auth
             WHERE auth_method = 'OAUTH'
         """ % {'schema': schema}))
-        print("auth connection", schema)
+        print("auth connection", schema.lower())
         c = connection.execute(get_oauth_sql)
 
         return [row[0] for row in c]
@@ -1084,7 +1084,7 @@ class VerticaDialect(default.DefaultDialect):
                     GET_MODEL_ATTRIBUTE 
                         ( USING PARAMETERS model_name='%(schema)s.%(model)s');
                 
-            """ % {'model': model_name, 'schema': schema}))
+            """ % {'model': model_name, 'schema': schema.lower()}))
 
         used_by = ""
         attr_name = []
@@ -1110,7 +1110,7 @@ class VerticaDialect(default.DefaultDialect):
                         GET_MODEL_ATTRIBUTE 
                             ( USING PARAMETERS model_name='%(schema)s.%(model)s', attr_name='%(attr_name)s');
                     
-                """ % {'model': model_name, 'schema': schema, 'attr_name': attr_names}))
+                """ % {'model': model_name, 'schema': schema.lower(), 'attr_name': attr_names}))
 
             value_final = dict()
             attr_details_dict = {"attr_name": attr_names}
