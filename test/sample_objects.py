@@ -47,3 +47,5 @@ sample_model_list = ["naive_house84_model"]
 sample_tags = {"sampletemp": "dbadmin", "employee_dimension": "dbadmin", "clicks": "dbadmin"}
 
 sample_ml_model = "naive_house84_model"
+
+sample_oauth_name = "v_oauth"

@@ -234,7 +234,7 @@ def test_get_model_comment(vconn):
     assert len(mc["properties"]["Model Specifications"])>0
 
 def test_get_oauth_comment(vconn):
-    oc = vconn[0].dialect.get_oauth_comment(vconn[1])
+    oc = vconn[0].dialect.get_oauth_comment(vconn[1],oauth= sample.sample_oauth_name,schema="None")
     assert oc["properties"]["client_id"] == "vertica"
     h = re.compile(r'http://|https://')
     assert len(oc["properties"]["introspect_url"])>0
