@@ -501,7 +501,7 @@ class VerticaDialect(default.DefaultDialect):
             from v_catalog.projections
             WHERE lower(projection_schema) =  '%(schema)s'
             ORDER BY projection_name
-            """ % {'schema': schema}))
+            """ % {'schema': schema.lower()}))
 
         c = connection.execute(get_projection_sql)
         return [row[0] for row in c]
@@ -974,11 +974,12 @@ class VerticaDialect(default.DefaultDialect):
                 SELECT is_super_projection,is_key_constraint_projection,is_aggregate_projection,has_expressions
                 FROM v_catalog.projections
                 WHERE lower(projection_name) = '%(table)s'
-            """ % {'table': projection_name.lower(), 'schema_condition': schema_condition}))
+                AND lower(projection_schema) = '%(schema)s'
+            """ % {'table': projection_name.lower(), 'schema': schema.lower()}))
 
         for data in connection.execute(spt):
             lst = ["is_super_projection", "is_key_constraint_projection",
-                   "is_aggregate_projection", "is_shared"]
+                   "is_aggregate_projection", "has_expressions"]
 
             i = 0
             for d in range(len(data)):
