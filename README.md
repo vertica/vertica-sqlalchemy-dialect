@@ -1,21 +1,24 @@
 # Vertica SQLAlchemy Dialect
 
-[![Build and Test](https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect/actions/workflows/dialecttest.yml/badge.svg)](https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect/actions/workflows/dialecttest.yml)
-[![PyPi](https://img.shields.io/pypi/v/sqlalchemy-vertica-dialect.svg)](https://pypi.python.org/pypi/sqlalchemy-vertica-dialect/)
+[![Build and Test](https://github.com/vertica/vertica-sqlalchemy-dialect/actions/workflows/dialecttest.yml/badge.svg)](https://github.com/vertica/vertica-sqlalchemy-dialect/actions/workflows/dialecttest.yml)
+[![PyPi](https://img.shields.io/pypi/v/vertica-sqlalchemy-dialect.svg)](https://pypi.python.org/pypi/vertica-sqlalchemy-dialect/)
 [![License Apache-2.0](https://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 Vertica dialect for SQLAlchemy uses the pure-Python DB-API driver vertica-python, to connect a Vertica database and SQLAlchemy applications.
 
-This repo was forked from a series of chained forks as outlined in the [Acknowledgement] (https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect/ACKNOWLEDGEMENTS).
+This repo was derived from a series of chained forks as outlined in the [Acknowledgement](https://github.com/vertica/vertica-sqlalchemy-dialect/blob/main/ACKNOWLEDGMENTS).
+
+> **Warning**
+> This dialect currently doesn't not have state-of-the-art features and support maybe limited based on Vertica developer availability. However, we encourage you to raise a PR to add new features that may help your SQLAlchemy application.
 
 ## Prerequisites
 
 You will need the following softwares to run, build and test the dialect. Everything apart from Python and pip can be installed via pip itself.
 
-    1. Python 3.x or higher
-    2. pip 22 or higher
-    3. SQLAlchemy 1.3.24 or higher
-    4. vertica-python 1.1.1 or higher
+1. Python 3.x or higher
+2. pip 22 or higher
+3. SQLAlchemy > 1.3.24 and < 2.0
+4. vertica-python 1.1.1 or higher
 
 ### Vertica-Python
 
@@ -63,7 +66,7 @@ pip install --upgrade vertica-sqlalchemy-dialect
 
 2. Replace the credentials with the values for Vertica DB and user.
 
-    For more details, see [Connection Parameters](https://github.com/vishalkSimplify/sqlalchemy-vertica-dialect#connection-parameters).
+    For more details, see [Connection Parameters](https://github.com/vertica/vertica-sqlalchemy-dialect#connection-parameters).
 
 3. Execute the sample code. For example, if you created a file named `validate.py`:
 

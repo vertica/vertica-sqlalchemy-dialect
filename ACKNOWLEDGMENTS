@@ -1,0 +1,10 @@
+THIS PROJECT IS THE MAINLY DERIVED FROM startappdev repo:
+  - https://github.com/startappdev/sqlalchemy-vertica
+
+THIS PROJECT WAS ALSO DERIVED FROM THE FOLLOWING PROJECTS:
+
+  - https://github.com/zzzeek/sqlalchemy
+  - https://github.com/bluelabsio/vertica-sqlalchemy
+  - https://github.com/Eighty20/sqlalchemy-vertica-python
+  - https://github.com/LocusEnergy/sqlalchemy-vertica-python
+  - https://github.com/dennisobrien/sqlalchemy-vertica-python
