@@ -16,7 +16,7 @@ TEST_SCHEMA = f"sqlalchemy_tests_{str(uuid.uuid4()).replace('-', '_')}"
 
 create_engine_with_future_flag = create_engine
 
-
+# For future not yet supported
 def pytest_addoption(parser):
     parser.addoption(
         "--run_v20_sqlalchemy",
