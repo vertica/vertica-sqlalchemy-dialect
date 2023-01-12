@@ -193,7 +193,7 @@ def test_get_ros_count(vconn):
 
 def test_get_segmented(vconn):
     isseg = vconn[0].dialect._get_segmented(vconn[1], projection_name=sample.sample_projections[1], schema="store")
-    assert isseg[0] in [True,False]
+    assert isseg[0] in ["True","False"]
     assert isseg[1]
 
 def test_get_partitionkey(vconn):
