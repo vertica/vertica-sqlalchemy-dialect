@@ -3,7 +3,7 @@ name: Test Vertica-SQLAlchemy dialect
 on:
   push:
     branches:
-     - mergesimplify
+     - main
   pull_request:
     branches:
      - main
