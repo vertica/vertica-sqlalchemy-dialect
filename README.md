@@ -6,10 +6,10 @@
 
 Vertica dialect for SQLAlchemy uses the pure-Python DB-API driver vertica-python, to connect a Vertica database and SQLAlchemy applications.
 
-This repo was derived from a series of chained forks as outlined in the [Acknowledgement](https://github.com/vertica/vertica-sqlalchemy-dialect/ACKNOWLEDGEMENTS).
+This repo was derived from a series of chained forks as outlined in the [Acknowledgement](https://github.com/vertica/vertica-sqlalchemy-dialect/blob/main/ACKNOWLEDGMENTS).
 
 > **Warning**
-> This dialect currently doesn't not have state-of-the-art features and support maybe limited based on Vertica developer ability. However, we encourage you to raise a PR to add new feature that may help your SQLAlchemy application.
+> This dialect currently doesn't not have state-of-the-art features and support maybe limited based on Vertica developer availability. However, we encourage you to raise a PR to add new features that may help your SQLAlchemy application.
 
 ## Prerequisites
 
