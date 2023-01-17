@@ -16,7 +16,7 @@ Unfortunately, sqlalchemy-vertica was removed from pypi.
 | sa.create_engine('vertica+vertica_python://user:pwd@host:port/database')
 
 Installation
------------
+-------------
 From PyPI:
 
 pip install sqlalchemy-vertica-dialect[pyodbc,turbodbc,vertica-python]  # choose the relevant engines
