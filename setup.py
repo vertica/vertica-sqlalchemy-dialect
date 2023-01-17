@@ -22,18 +22,17 @@ with open("README.rst", "r") as f:
     description = f.read()
 
 
-version_info = (0, 1, 4)
+version_info = (0, 0, 1)
 
 version = '.'.join(map(str, version_info))
 
 setup(
     name='vertica-sqlalchemy-dialect',
     version=version,
-    description='Vertica dialect for SQLalchemy',
+    description='Official Vertica dialect for SQLalchemy',
     long_description=description,
-    license='MIT',
-    url='https://github.com/vertica/vertica-sqlalchemy-dialect.git',
-    download_url='https://github.com/vertica/vertica-sqlalchemy-dialect.git/tarball/%s' % (version,),
+    license='Apache License 2.0',
+    url='https://github.com/vertica/vertica-sqlalchemy-dialect',
     author='Narendra Prabhu',
     packages=(
         'vertica_sqlalchemy_dialect',
