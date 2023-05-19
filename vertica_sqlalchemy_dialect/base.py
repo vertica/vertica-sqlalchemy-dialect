@@ -80,6 +80,7 @@ ischema_names = {
     'GEOMETRY': BLOB,
 }
 
+#
 
 class UUID(String):
     """The SQL UUID type."""
