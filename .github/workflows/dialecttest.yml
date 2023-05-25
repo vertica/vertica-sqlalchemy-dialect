@@ -57,7 +57,7 @@ jobs:
           python -m ensurepip --upgrade
           python -m venv venv
           source venv/bin/activate
-          python -m pip install setuptools wheel pytest pyodbc sqlalchemy
+          python -m pip install setuptools wheel pytest pyodbc sqlalchemy==1.4.48
           python setup.py install
       - name: Run tests
         # This step references the directory that contains the action.
