@@ -25,11 +25,12 @@ from . import sample_objects as sample
 @pytest.fixture(scope="module")
 def vconn():
     engine = sa.create_engine('vertica+vertica_python://dbadmin:abc123@localhost:5433/VMart')
+    conn = engine.connect()
     try:     
-        conn = engine.connect()
+        yield [engine, conn]
     except:
         print("Failed to connect to the database")
-    yield [engine, conn]
+    
     conn.close()
     engine.dispose()
 
