@@ -236,15 +236,19 @@ def test_get_ifcachedproj(vconn):
     assert cp in [True,False]
 
 def test_get_projection_comment(vconn):
-    pc = vconn[0].dialect.get_projection_comment(vconn[1], projection_name=sample.sample_projections[1], schema="store")
-    assert pc["properties"]["ROS Count"]\
-    and pc["properties"]["is_segmented"] \
-    and pc["properties"]["Projection Type"] \
-    and pc["properties"]["Partition Key"] \
-    and pc["properties"]["Number of Partition"] \
-    and pc["properties"]["Segmentation_key"] \
-    and pc["properties"]["Projection Size"] \
-    and pc["properties"]["Projection Cached"]
+    pc = vconn[0].dialect.get_projection_comment(vconn[1],  schema="store")
+    projection_name=sample.sample_projections[1]
+    projection_comments = sample.sample_projection_columns
+    properties = []
+    for data in pc['properties']:
+        if data["projection_name"] == projection_name:
+            properties.append(data)
+            
+            
+    print("Properties",properties)
+    print("comment",projection_comments)
+    assert properties[0] == projection_comments
+
 
 def test_get_model_comment(vconn):
     mc = vconn[0].dialect.get_model_comment(vconn[1], model_name=sample.sample_ml_model, schema="public")
@@ -261,5 +265,82 @@ def test_get_oauth_comment(vconn):
     assert len(oc["properties"]["discovery_url"])>0
     assert bool(h.match(oc["properties"]["discovery_url"]))
     assert len(oc["properties"]["is_fallthrough_enabled"])>0
+    
+    
+    
+def test_get_all_owners(vconn):
+    owner = vconn[0].dialect.get_table_owner(vconn[1],schema='public')
+    table_owner = owner[0][1]
+    assert table_owner == "dbadmin"
+    
+def test_get_all_columns(vconn):
+    res = vconn[0].dialect.get_all_columns(connection=vconn[1], schema="public")
+    table_name=sample.sample_table_list["public"][2]
+  
+    columns = []
+    for data in res:
+        if data['tablename'] == table_name:
+            columns.append(data)
+    # Assert the no. of columns
+    assert len(columns)>0
+    # # Assert sample columns
+    assert all(value["name"] in sample.sample_columns for value in columns)
+    
+    
+def test_get_all_view_columns(vconn):
+    res = vconn[0].dialect.get_all_view_columns(connection=vconn[1], schema="public")
+    # Assert the no. of columns
+    assert len(res)>0
+    # Assert sample columns
+    assert all(value["name"] in sample.sample_view_columns for value in res)
 
 
+def test_get_view_comment(vconn):
+    res = vconn[0].dialect.get_view_comment(connection=vconn[1], schema="public")
+    if res['properties'] is not None:
+        has_comment = True
+    else:
+        has_comment = False
+        
+    assert has_comment == True
+    
+    
+def test_get_view_owner(vconn):
+    owner = vconn[0].dialect.get_view_owner(vconn[1],schema='public')
+    table_owner = owner[0][1]
+    assert table_owner == "dbadmin"
+    
+def test_get_projection_owner(vconn):
+    owner = vconn[0].dialect.get_projection_owner(vconn[1],schema='public')
+    table_owner = owner[0][1]
+    assert table_owner == "dbadmin"
+    
+def test_get_all_projection_columns(vconn):
+    res = vconn[0].dialect.get_all_projection_columns(connection=vconn[1], schema="public")
+    projection_name = 'inventory_fact_super'
+    columns = []
+    for data in res:
+        if data['tablename'] == projection_name:
+            columns.append(data)
+
+    print(columns)
+    # Assert the no. of columns
+    assert len(res)>0
+    # # Assert sample columns
+    assert all(value["name"] in sample.sample_projection_columns for value in columns)
+
+def test__populate_view_lineage(vconn):
+    res = vconn[0].dialect._populate_view_lineage(connection=vconn[1], schema="public")
+    upstream = "public.customer_dimension"
+    downstream = next(iter(res.keys()))
+    
+    assert res[downstream][0][0] == upstream
+    
+    
+def test__populate_projection_lineage(vconn):
+    res = vconn[0].dialect._populate_projection_lineage(connection=vconn[1], schema="public")
+    upstream = "public.date_dimension"
+    downstream = next(iter(res.keys()))
+    
+    
+    assert res[downstream][0][0] == upstream
