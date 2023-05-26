@@ -238,7 +238,7 @@ def test_get_ifcachedproj(vconn):
 def test_get_projection_comment(vconn):
     pc = vconn[0].dialect.get_projection_comment(vconn[1],  schema="store")
     projection_name=sample.sample_projections[1]
-    projection_comments = sample.sample_projection_columns
+    projection_comments = sample.sample_projection_properties
     properties = []
     for data in pc['properties']:
         if data["projection_name"] == projection_name:
@@ -323,10 +323,10 @@ def test_get_all_projection_columns(vconn):
         if data['tablename'] == projection_name:
             columns.append(data)
 
-    print(columns)
     # Assert the no. of columns
     assert len(res)>0
-    # # Assert sample columns
+    # Assert sample columns
+
     assert all(value["name"] in sample.sample_projection_columns for value in columns)
 
 def test__populate_view_lineage(vconn):
