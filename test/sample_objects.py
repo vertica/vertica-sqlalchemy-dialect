@@ -74,7 +74,7 @@ sample_constraints = {
     "C_NOTNULL":"product_key"
 }
 
-sample_pk = {"C_PRIMARY":"customer_key"}
+sample_pk = ['customer_key']
 
 sample_model_list = ["naive_house84_model"]
 

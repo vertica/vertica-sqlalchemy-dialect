@@ -179,10 +179,17 @@ def test_denormalize_name(vconn):
 def test_get_pk_constraint(vconn):
     # TODO query doesnt return the result here. Query works from other clients.
     res = vconn[0].dialect.get_pk_constraint(connection=vconn[1], table_name=sample.sample_table_list["public"][0], schema="public")
+    pk_constraint = ''
+    for data in res:
+        if data['tablename'] == sample.sample_table_list["public"][0]:
+            pk_constraint = data['name']
+            
+
     # Assert the no. of unique contraints
     assert len(res)>0
     # Assert sample constraint
-    assert all(k in sample.sample_pk.values() for k in res['name'])
+    assert pk_constraint == sample.sample_pk
+
 
 def test_get_foreign_keys(vconn):
     # TODO Need functionality
