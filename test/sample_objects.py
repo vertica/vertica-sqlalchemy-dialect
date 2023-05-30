@@ -44,6 +44,22 @@ sample_columns = [
     "discontinued_flag"
     ]
 
+sample_view_columns = [
+    'SUM',
+    'customer_state'
+    
+]
+
+
+sample_projection_columns = [
+    "date_key",
+    "product_key",
+    "product_version",
+    "warehouse_key",
+    "qty_in_stock",
+    "inventory_date"
+]
+
 sample_constraints = {
     "fk_store_orders_vendor":"vendor_key",
     "fk_store_orders_product":"product_key",
@@ -58,7 +74,7 @@ sample_constraints = {
     "C_NOTNULL":"product_key"
 }
 
-sample_pk = {"C_PRIMARY":"customer_key"}
+sample_pk = ['customer_key']
 
 sample_model_list = ["naive_house84_model"]
 
@@ -67,3 +83,4 @@ sample_tags = {"sampletemp": "dbadmin", "employee_dimension": "dbadmin", "clicks
 sample_ml_model = "naive_house84_model"
 
 sample_oauth_name = "v_oauth"
+sample_projection_properties = {'ROS_Count': 264, 'projection_name': 'store_orders_fact_super', 'Projection_Type': 'is_super_projection', 'is_segmented': 'True', 'Segmentation_key': 'hash(store_orders_fact.product_key, store_orders_fact.product_version, store_orders_fact.store_key, store_orders_fact.vendor_key, store_orders_fact.employee_key, store_orders_fact.order_number, store_orders_fact.date_ordered, store_orders_fact.date_shipped)', 'Partition_Key': '2014-06-04', 'projection_size': '7553 KB'}

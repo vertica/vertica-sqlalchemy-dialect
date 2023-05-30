@@ -18,9 +18,10 @@
 
 from __future__ import annotations
 from __future__ import absolute_import, unicode_literals, print_function, division
-
+import logging
 from typing import Any, Dict, Optional, List, Tuple
 import logging
+from datetime import datetime
 from sqlalchemy import exc
 from sqlalchemy import sql
 from sqlalchemy import util
@@ -40,6 +41,7 @@ from sqlalchemy.types import INTEGER, BIGINT, SMALLINT, VARCHAR, CHAR, \
     NUMERIC, FLOAT, REAL, DATE, DATETIME, BOOLEAN, BLOB, TIMESTAMP, TIME
 from sqlalchemy.sql.sqltypes import TIME, TIMESTAMP, String
 from sqlalchemy.sql import sqltypes
+logger: logging.Logger = logging.getLogger(__name__)
 
 ischema_names = {
     'INT': INTEGER,
@@ -174,7 +176,7 @@ class VerticaInspector(reflection.Inspector):
             self.bind, table, schema
         )
 
-    def get_projection_comment(self, projection_name, schema=None, **kw):
+    def get_projection_comment(self, schema=None, **kw):
         """Return information about the table properties for ``table_name``.
             as key and value.
 
@@ -184,7 +186,7 @@ class VerticaInspector(reflection.Inspector):
         """
 
         return self.dialect.get_projection_comment(
-            self.bind, projection_name, schema, info_cache=self.info_cache, **kw
+            self.bind, schema, info_cache=self.info_cache, **kw
         )
 
     def get_model_comment(self, model_name, schema=None, **kw):
@@ -248,7 +250,82 @@ class VerticaInspector(reflection.Inspector):
         return self.dialect._get_schema_properties(
             self.bind, schema, **kw
         )
+        
+    def get_table_owner(self, schema: Optional[str] = None, **kw: Any):
+        r"""Return primary key columns names within a particular schema. """
 
+        return self.dialect.get_table_owner(
+            self.bind, schema, info_cache=self.info_cache, **kw
+        )
+        
+    def get_all_columns(self, schema: Optional[str] = None, **kw: Any):
+        r"""Return all table columns names within a particular schema. """
+
+        return self.dialect.get_all_columns(
+            self.bind, schema, info_cache=self.info_cache, **kw
+        )
+
+    def get_pk_constraint(self, schema=None, **kw):
+        
+        return self.dialect.get_pk_constraint(
+            self.bind, schema, info_cache=self.info_cache, **kw
+        )
+        
+    def get_table_comment(self, table: Optional[str] = None,schema: Optional[str] = None,**kw):
+        
+        return self.dialect.get_table_comment(
+            self.bind,table , schema, info_cache=self.info_cache, **kw
+        )
+        
+    def get_all_view_columns(self, schema: Optional[str] = None, **kw: Any):
+        r"""Return all view columns names within a particular schema. """
+
+        return self.dialect.get_all_view_columns(
+            self.bind, schema, info_cache=self.info_cache, **kw
+        )
+
+    def get_view_comment(self,  schema: Optional[str] = None, **kw: Any):
+        r"""Return view comments within a particular schema. """
+
+        return self.dialect.get_view_comment(
+            self.bind, schema, info_cache=self.info_cache, **kw
+        )
+        
+        
+    def get_view_owner(self, schema: Optional[str] = None, **kw: Any):
+        r"""Return primary key columns names within a particular schema. """
+
+        return self.dialect.get_view_owner(
+            self.bind, schema, info_cache=self.info_cache, **kw
+        )    
+        
+    def _populate_view_lineage(self, schema: Optional[str] = None, **kw: Any):
+        r"""Return primary key columns names within a particular schema. """
+
+        return self.dialect._populate_view_lineage(
+            self.bind, schema , **kw
+        )  
+        
+    def get_all_projection_columns(self, schema: Optional[str] = None, **kw: Any):
+        r"""Return all projection columns names within a particular schema. """
+
+        return self.dialect.get_all_projection_columns(
+            self.bind, schema, info_cache=self.info_cache, **kw
+        )
+        
+    def get_projection_owner(self, schema: Optional[str] = None, **kw: Any):
+        r"""Return all projection columns names within a particular schema. """
+
+        return self.dialect.get_projection_owner(
+            self.bind, schema, info_cache=self.info_cache, **kw
+        )
+        
+    def _populate_projection_lineage(self, schema: Optional[str] = None, **kw: Any):
+        r"""Return primary key columns names within a particular schema. """
+
+        return self.dialect._populate_projection_lineage(
+            self.bind, schema , **kw
+        )
 # noinspection PyArgumentList,PyAbstractClass
 
 
@@ -439,8 +516,7 @@ class VerticaDialect(default.DefaultDialect):
         return [row[0] for row in c if not row[0].startswith('v_')]
 
     @reflection.cache
-    def get_table_comment(self, connection, table_name, schema=None, **kw):
-
+    def get_table_comment(self, connection,table_name, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(table_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
@@ -450,38 +526,41 @@ class VerticaDialect(default.DefaultDialect):
         sct = sql.text(dedent("""
                 SELECT create_time , table_name
                 FROM v_catalog.tables
-                WHERE lower(table_name) = '%(table)s'
-                AND %(schema_condition)s
-                UNION ALL
-                SELECT create_time , table_name
-                FROM V_CATALOG.VIEWS
-                WHERE lower(table_name) = '%(table)s'
-                AND %(schema_condition)s
-                
-            """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
+                where lower(table_schema) = '%(schema)s'
+            """ % {'schema': schema.lower()}))
 
-        sts = sql.text(dedent("""
-                SELECT ROUND(SUM(used_bytes) / 1024 ) AS table_size
+        sts = sql.text(dedent(""" 
+                SELECT used_bytes ,anchor_table_name
                 FROM v_monitor.column_storage
-                WHERE lower(anchor_table_name) = '%(table)s'
-                
-            """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
+                where lower(anchor_table_schema) = '%(schema)s'
+                        """ % {'schema': schema.lower()}))
+        
+        columns = []
+        
+        for row in connection.execute(sct):
 
-        columns = ""
-        for column in connection.execute(sct):
-            columns = column['create_time']
-
+            columns.append({'create_time': str(row[0]), 'table_name': row[1]})
+        table_size_dict={}
         for table_size in connection.execute(sts):
-            if table_size[0] is None:
-                TableSize = 0
-            else:
-                TableSize = math.trunc(table_size['table_size'])
+        
+            if table_size[1] not in table_size_dict:
+                table_size_dict[table_size[1]] = table_size[0] / 1024
 
+            else:
+                table_size_dict[table_size[1]] += table_size[0] / 1024
+                        
+        for a in columns:
+            if a['table_name'] in table_size_dict:
+                a['table_size'] = str(int(table_size_dict[a['table_name']])) + " KB"
+            
+            else:
+                a['table_size'] = "0 KB"
+            a['table_name'] = a['table_name'].lower()
         return {"text": "References the properties of a native table in Vertica. \
         Vertica physically stores table data in projections, which are collections of table columns. \
         Projections store data in a format that optimizes query execution. \
         In order to query or perform any operation on a Vertica table, the table must have one or more projections associated with it. ",
-                "properties": {"create_time": str(columns), "Total_Table_Size": str(TableSize) + " KB"}}
+                "properties":  columns }
 
     @reflection.cache
     def get_table_oid(self, connection, table_name, schema=None, **kw):
@@ -705,9 +784,9 @@ class VerticaDialect(default.DefaultDialect):
         return name
 
     # methods allows table introspection to work
-    @reflection.cache
-    def get_pk_constraint(self, bind, table_name, schema=None, **kw):
-        return {'constrained_columns': [], 'name': 'undefined'}
+    # @reflection.cache
+    # def get_pk_constraint(self, bind, table_name, schema=None, **kw):
+    #     return {'constrained_columns': [], 'name': 'undefined'}
 
     # TODO complete the foreign keys function
     @reflection.cache
@@ -748,24 +827,24 @@ class VerticaDialect(default.DefaultDialect):
                 args = ()  # type: ignore
         elif attype == "integer":
             args = ()  # type: ignore
-        elif attype in ("timestamptz", "timetz"):
-            kwargs["timezone"] = True
-            if charlen:
-                kwargs["precision"] = int(charlen)  # type: ignore
-            args = ()  # type: ignore
-        elif attype in ("timestamp", "time"):
-            kwargs["timezone"] = False
-            # if charlen:
-            #     kwargs["precision"] = int(charlen)  # type: ignore
-            args = ()  # type: ignore
-        elif attype.startswith("interval"):
-            field_match = re.match(r"interval (.+)", attype, re.I)
-            if charlen:
-                kwargs["precision"] = int(charlen)  # type: ignore
-            if field_match:
-                kwargs["fields"] = field_match.group(1)  # type: ignore
-            attype = "interval"
-            args = ()  # type: ignore
+        # elif attype in ("timestamptz", "timetz"):
+        #     kwargs["timezone"] = True
+        #     # if charlen:
+        #     #     kwargs["precision"] = int(charlen)  # type: ignore
+        #     args = ()  # type: ignore
+        # elif attype in ("timestamp", "time"):
+        #     kwargs["timezone"] = False
+        #     # if charlen:
+        #     #     kwargs["precision"] = int(charlen)  # type: ignore
+        #     args = ()  # type: ignore
+        # elif attype.startswith("interval"):
+        #     field_match = re.match(r"interval (.+)", attype, re.I)
+        #     # if charlen:
+        #     #     kwargs["precision"] = int(charlen)  # type: ignore
+        #     if field_match:
+        #         kwargs["fields"] = field_match.group(1)  # type: ignore
+        #     attype = "interval"
+        #     args = ()  # type: ignore
         elif attype == "date":
             args = ()  # type: ignore
         elif charlen:
@@ -846,7 +925,7 @@ class VerticaDialect(default.DefaultDialect):
 
         return [row[0] for row in c]
 
-    def get_pk_constraint(self, connection, table_name, schema: None, **kw):
+    def get_pk_constraint(self, connection,schema: None, **kw):
         if schema is not None:
             schema_condition = "lower(table_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
@@ -854,20 +933,21 @@ class VerticaDialect(default.DefaultDialect):
             schema_condition = "1"
 
         spk = sql.text(dedent("""
-                SELECT column_name
+                SELECT column_name ,table_name
                 FROM v_catalog.primary_keys
-                WHERE lower(table_name) = '%(table)s'
-                AND constraint_type = 'p'
-                AND %(schema_condition)s
-            """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
+                WHERE lower(table_schema) = '%(schema)s'
+                
+            """ % {'schema': schema.lower()}))
 
         pk_columns = []
-
+       
         for row in connection.execute(spk):
             columns = row['column_name']
-            pk_columns.append(columns)
+            table_name = row['table_name'].lower()
+            # print(row)
+            pk_columns.append({'constrained_columns': [columns], 'name': [columns],"tablename":table_name})
 
-        return {'constrained_columns': pk_columns, 'name': pk_columns}
+        return pk_columns
 
     # @reflection.cache
     def _get_extra_tags(
@@ -1067,19 +1147,134 @@ class VerticaDialect(default.DefaultDialect):
         return cached_projection
 
     @reflection.cache
-    def get_projection_comment(self, connection, projection_name, schema=None, **kw):
+    def get_projection_comment(self, connection, schema=None, **kw):
+        
+        src = sql.text(dedent("""
+                SELECT ros_count , LOWER(projection_name)
+                FROM v_monitor.projection_storage
+                WHERE lower(projection_schema) = '%(schema)s'
 
+            """ % {'schema': schema}))
+        
+        projection_type =sql.text(dedent("""
+                SELECT is_super_projection,is_key_constraint_projection,is_aggregate_projection,has_expressions ,LOWER(projection_name)
+                FROM v_catalog.projections
+                WHERE lower(projection_schema) = '%(schema)s' 
+                """ % {'schema': schema}))
+        
+        
+        is_segmented = sql.text(dedent("""
+                SELECT is_segmented , segment_expression , LOWER(projection_name)
+                FROM v_catalog.projections 
+                WHERE lower(projection_schema) = '%(schema)s'
+            """ % {'schema': schema}))
+        
+        
+        partition_key = sql.text(dedent("""
+                SELECT  DISTINCT LOWER(projection_name) ,  partition_key 
+                FROM v_monitor.partitions
+                WHERE lower(table_schema) = '%(schema)s'
+              
+            """ % {'schema': schema}))
+        
+        partition_num = sql.text(dedent("""
+                SELECT  COUNT(ros_id) , LOWER(projection_name)
+                FROM v_monitor.partitions
+                WHERE lower(table_schema) = '%(schema)s'
+                GROUP BY projection_name
+            """ % {'schema': schema}))
+        
+        projection_size = sql.text(dedent("""
+            SELECT used_bytes , LOWER(projection_name) 
+            from v_monitor.projection_storage
+            WHERE lower(projection_schema) = '%(schema)s'
+        """ % {'schema': schema}))
+        
+        projection_cache = sql.text(dedent("""
+            SELECT COUNT(*) , object_name
+            FROM DEPOT_PIN_POLICIES
+            WHERE lower(schema_name) = '%(schema)s'
+            GROUP BY object_name 
+            """ % {'schema': schema}))
+        
+        projection_comment = []
+      
+        ros_count = {}
+        for data in connection.execute(src):
+            # ros_count = data['ros_count']
+            ros_count = {"ROS_Count": data[0] , "projection_name" : data[1]}
+            projection_comment.append(ros_count)
+        
+        
+     
+        lst = ["is_super_projection", "is_key_constraint_projection",
+                   "is_aggregate_projection", "has_expressions"]
+        
+        for ptype in connection.execute(projection_type):    
+            for i, value in enumerate(ptype):
+                if value is True:
+                    for a in projection_comment:
+                        if a['projection_name'] == ptype[4]:
+                            if "Projection_Type" in a:
+                                a["Projection_Type"] = a["Projection_Type"] + ", "+str(lst[i])
+                            else:
+                                a["Projection_Type"] = str(lst[i])
+                                 
+        for projection_segment in connection.execute(is_segmented):
+            
+            for a in projection_comment:
+                if a['projection_name'] == projection_segment[2]:
+                    a["is_segmented"] = str(projection_segment[0])
+                    a["Segmentation_key"] = str(projection_segment[1])
+         
+        for partion_keys in connection.execute(partition_key):
+            for a in projection_comment:
+                
+                if a['projection_name'] == partion_keys[0]:
+                    a["Partition_Key"] = str(partion_keys[1])
+              
+
+     
+        projection_size_dict={}
+        for projection_sizes in connection.execute(projection_size):
+            if projection_sizes[1] not in projection_size_dict:
+                projection_size_dict[projection_sizes[1]] = projection_sizes[0] / 1024
+
+            else:
+                projection_size_dict[projection_sizes[1]] += projection_sizes[0] / 1024
+                
+                
+            for a in projection_comment:
+                if a['projection_name'] in projection_size_dict:
+                    a['projection_size'] = str(int(projection_size_dict[a['projection_name']])) + " KB"
+                
+                else:
+                    a['projection_size'] = "0 KB"
+             
+           
+        for partition_number in connection.execute(partition_num):
+            for a in projection_comment:
+                if a['projection_name'] == partition_number[0]:
+                    a["Partition_Size"] = str(partition_number[1])
+                    
+        for projection_cached in connection.execute(projection_cache):
+            for a in projection_comment:
+                if a['projection_name'] == projection_cached[1]:
+                    if projection_cached[0] > 0:
+                        a["Projection_Cached"] = True
+                    else:
+                        a["Projection_Cached"] = False
+                        
+        
+     
+            
+            
+        # print(projection_comment)
+        # exit()
         return {"text": "Vertica physically stores table data in projections, \
             which are collections of table columns. Projections store data in a format that optimizes query execution \
             For more info on projections and corresponding properties check out the Vertica Docs: https://www.vertica.com/docs",
-                "properties": {"ROS Count": str(self._get_ros_count(connection, projection_name, schema)),
-                               "is_segmented": str(self._get_segmented(connection, projection_name, schema)[0]),
-                               "Projection Type": str(self._get_projectiontype(connection, projection_name, schema)),
-                               "Partition Key": str(self._get_partitionkey(connection, projection_name, schema)),
-                               "Number of Partition": str(self._get_numpartitions(connection, projection_name, schema)),
-                               "Segmentation_key": str(self._get_segmented(connection, projection_name, schema)[1]),
-                               "Projection Size": str(self._get_projectionsize(connection, projection_name, schema))+" KB",
-                               "Projection Cached": str(self._get_ifcachedproj(connection, projection_name, schema))}}
+                "properties": projection_comment }
 
     @reflection.cache
     def get_model_comment(self, connection, model_name, schema=None, **kw):
@@ -1204,3 +1399,417 @@ class VerticaDialect(default.DefaultDialect):
             All the properties shown here are what Vertica uses for a client connecting via OAUTH.", "properties": {"discovery_url": str(discovery_url),
                 "client_id": str(client_id), "introspect_url": str(introspect_url), "auth_oid ": str(auth_oid), "client_secret": str(client_secret),
                 "is_auth_enabled": str(is_auth_enabled), "auth_priority": str(auth_priority), "address_priority": str(address_priority), "is_fallthrough_enabled": str(is_fallthrough_enabled), }}
+    
+########################################################## new code ############################################################    
+    
+    def get_table_owner(self, connection, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(table_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
+
+        sct = sql.text(dedent("""
+                SELECT table_name ,owner_name 
+                FROM v_catalog.tables
+                where lower(table_schema) = '%(schema)s'
+            """ % {'schema': schema.lower()}))
+
+        owner_info = []
+        for row in connection.execute(sct):
+            owner_info.append(row)
+            # print(row)
+
+        
+        return owner_info
+    
+    @reflection.cache
+    def get_all_columns(self, connection,schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(table_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
+      
+        s = sql.text(dedent("""
+            SELECT column_name, data_type, column_default, is_nullable,table_name
+            FROM v_catalog.columns
+            where lower(table_schema) = '%(schema)s'
+           
+        """ % {'schema': schema.lower()}))
+
+        columns = []
+       
+        for row in connection.execute(s):
+            name = row.column_name
+            dtype = row.data_type.lower()
+            default = row.column_default
+            nullable = row.is_nullable
+            tablename = row.table_name.lower()
+
+            column_info = self._get_all_column_info(
+                name,
+                dtype,
+                default,
+                nullable,
+                schema,
+                tablename
+            )
+            # print(column_info)
+            # column_info.update({'primary_key': primary_key})
+            columns.append(column_info)
+        
+        return columns
+    @reflection.cache  
+    def _get_all_column_info(  # noqa: C901
+            self, name, data_type, default, is_nullable, schema=None ,table_name=None
+        ):
+
+        attype: str = re.sub(r"\(.*\)", "", data_type)
+
+        charlen = re.search(r"\(([\d,]+)\)", data_type)
+        if charlen:
+            charlen = charlen.group(1)  # type: ignore
+        args = re.search(r"\((.*)\)", data_type)
+        if args and args.group(1):
+            args = tuple(re.split(r"\s*,\s*", args.group(1)))  # type: ignore
+        else:
+            args = ()  # type: ignore
+        kwargs: Dict[str, Any] = {}
+
+        if attype == "numeric":
+            if charlen:
+                prec, scale = charlen.split(",")  # type: ignore
+                args = (int(prec), int(scale))  # type: ignore
+            else:
+                args = ()  # type: ignore
+        elif attype == "integer":
+            args = ()  # type: ignore
+        elif attype in ("timestamptz", "timetz"):
+            kwargs["timezone"] = True
+            # if charlen:
+            #     kwargs["precision"] = int(charlen)  # type: ignore
+            args = ()  # type: ignore
+        elif attype in ("timestamp", "time"):
+            kwargs["timezone"] = False
+            # if charlen:
+            #     kwargs["precision"] = int(charlen)  # type: ignore
+            args = ()  # type: ignore
+        elif attype.startswith("interval"):
+            field_match = re.match(r"interval (.+)", attype, re.I)
+            # if charlen:
+            #     kwargs["precision"] = int(charlen)  # type: ignore
+            if field_match:
+                kwargs["fields"] = field_match.group(1)  # type: ignore
+            attype = "interval"
+            args = ()  # type: ignore
+        elif attype == "date":
+            args = ()  # type: ignore
+        elif charlen:
+            args = (int(charlen),)  # type: ignore
+
+        while True:
+            if attype.upper() in self.ischema_names:
+                coltype = self.ischema_names[attype.upper()]
+                break
+            else:
+                coltype = None
+                break
+
+        self.ischema_names["UUID"] = UUID
+        self.ischema_names["TIMESTAMP"] = TIMESTAMP_WITH_PRECISION
+        self.ischema_names["TIMESTAMPTZ"] = TIMESTAMP_WITH_TIMEZONE
+        self.ischema_names["TIMETZ"] = TIME_WITH_TIMEZONE
+
+        if coltype:
+            coltype = coltype(*args, **kwargs)
+        else:
+            util.warn("Did not recognize type '%s' of column '%s'" %
+                      (attype, name))
+            coltype = sqltypes.NULLTYPE
+        # adjust the default value
+        autoincrement = False
+        if default is not None:
+            match = re.search(r"""(nextval\(')([^']+)('.*$)""", default)
+            if match is not None:
+                if issubclass(coltype._type_affinity, sqltypes.Integer):
+                    autoincrement = True
+                # the default is related to a Sequence
+                sch = schema
+                if "." not in match.group(2) and sch is not None:
+                    # unconditionally quote the schema name.  this could
+                    # later be enhanced to obey quoting rules /
+                    # "quote schema"
+                    default = (
+                        match.group(1)
+                        + ('"%s"' % sch)
+                        + "."
+                        + match.group(2)
+                        + match.group(3)
+                    )
+
+        column_info = dict(
+            name=name,
+            type=coltype,
+            nullable=is_nullable,
+            default=default,
+            autoincrement=autoincrement,
+            comment=str(default),
+            tablename = str(table_name)
+        )
+        
+        return column_info
+    
+    @reflection.cache
+    def get_all_view_columns(self, connection,schema=None, **kw):
+       
+        s = sql.text(dedent("""
+            SELECT column_name, data_type, '' as column_default, true as is_nullable,lower(table_name) as table_name
+            FROM v_catalog.view_columns
+            where lower(table_schema) = '%(schema)s'
+        """ % {'schema': schema.lower()}))
+
+  
+        columns = []
+       
+        for row in connection.execute(s):
+            name = row.column_name
+            dtype = row.data_type.lower()
+            default = row.column_default
+            nullable = row.is_nullable
+            tablename = row.table_name.lower()
+
+            column_info = self._get_all_column_info(
+                name,
+                dtype,
+                default,
+                nullable,
+                schema,
+                tablename
+            )
+            # print(column_info)
+            # column_info.update({'primary_key': primary_key})
+            columns.append(column_info)
+            
+        
+        
+        return columns
+    
+    @reflection.cache
+    def get_view_comment(self, connection, schema=None, **kw):
+
+        sct = sql.text(dedent("""
+                SELECT create_time , table_name
+                FROM v_catalog.views
+                where lower(table_schema) = '%(schema)s'
+               
+                
+            """ % {'schema': schema.lower()}))
+
+       
+        columns = []
+        for row in connection.execute(sct):
+            columns.append({'create_time': str(row[0]), 'table_name': row[1]})
+
+        return {"text": "References the properties of a native table in Vertica. \
+        Vertica physically stores table data in projections, which are collections of table columns. \
+        Projections store data in a format that optimizes query execution. \
+        In order to query or perform any operation on a Vertica table, the table must have one or more projections associated with it. ",
+                "properties":  columns }
+        
+    @reflection.cache     
+    def get_view_owner(self, connection, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(table_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
+
+        sct = sql.text(dedent("""
+                SELECT table_name ,owner_name 
+                FROM v_catalog.views
+                where lower(table_schema) = '%(schema)s'
+            """ % {'schema': schema.lower()}))
+
+        
+        owner_info = []
+        for row in connection.execute(sct):
+            owner_info.append(row)
+            # print(row)
+
+        
+        return owner_info
+    
+    
+    def _populate_view_lineage(self, connection, schema: str) -> None:
+        """Collects upstream and downstream lineage information for views .
+
+        Args:
+            view (str): name of the view
+
+        """
+        
+        self.view_lineage_map: Optional[Dict[str, List[Tuple[str, str, str]]]] = None
+
+       
+
+        view_upstream_lineage_query = sql.text(
+            dedent(
+                """
+            select table_name ,table_schema, reference_table_name ,reference_table_schema  from v_catalog.view_tables where table_schema = '%(schema)s' """
+                % {"schema": schema}
+            )
+        )
+
+        refrence_table = []
+        for data in connection.execute(view_upstream_lineage_query):
+            # refrence_table.append(data)
+            refrence_table.append({"reference_table_name" : data["reference_table_name"] , "reference_table_schema":data["reference_table_schema"] ,
+                                   "view_name":data["table_name"], "table_schema":data["table_schema"]} )
+            # refrence_table = data["reference_table_name"]
+
+        num_edges: int = 0
+
+        try:
+            self.view_lineage_map = defaultdict(list)
+            for lineage in refrence_table:
+                
+                downstream = f"{lineage['table_schema']}.{lineage['view_name']}"
+                
+                
+                upstream = f"{lineage['reference_table_schema']}.{lineage['reference_table_name']}"
+
+                view_upstream: str = upstream
+                view_name: str = downstream
+                self.view_lineage_map[view_name].append(
+                    # (<upstream_table_name>, <empty_json_list_of_upstream_table_columns>, <empty_json_list_of_downstream_view_columns>)
+                    (view_upstream, "[]", "[]")
+                )
+                
+                
+                num_edges += 1
+                
+                return self.view_lineage_map
+
+        except Exception as e:
+            self.warn(
+                logger,
+                "view_upstream_lineage",
+                "Extracting the upstream & Downstream view lineage from vertica failed."
+                + f"Please check your permissions. Continuing...\nError was {e}.",
+            )
+
+        logger.info(
+            f"A total of {num_edges} View upstream edges found found for {schema}"
+        )
+        
+    @reflection.cache
+    def get_all_projection_columns(self, connection,schema=None, **kw):
+       
+        s = sql.text(dedent("""
+            SELECT projection_column_name, data_type, '' as column_default, true as is_nullable,lower(projection_name) as projection_name
+            FROM PROJECTION_COLUMNS
+            where lower(table_schema) = '%(schema)s'
+        """ % {'schema': schema.lower()}))
+
+  
+        columns = []
+       
+        for row in connection.execute(s):
+            name = row.projection_column_name
+            dtype = row.data_type.lower()
+            default = row.column_default
+            nullable = row.is_nullable
+            tablename = row.projection_name.lower()
+
+            column_info = self._get_all_column_info(
+                name,
+                dtype,
+                default,
+                nullable,
+                schema,
+                tablename
+            )
+            # print(column_info)
+            # column_info.update({'primary_key': primary_key})
+            columns.append(column_info)
+        
+        return columns
+    
+
+    def get_projection_owner(self, connection,schema=None, **kw):
+        projection_owner_command = sql.text(dedent("""
+                SELECT projection_name as table_name, owner_name
+                FROM v_catalog.projections
+                WHERE lower(projection_schema) = '%(schema)s'
+                """ % {'schema': schema.lower()}))
+        
+        owner_info = []
+        for row in connection.execute(projection_owner_command):
+            owner_info.append(row)
+            # print(row)
+
+        
+        return owner_info
+    
+    def _populate_projection_lineage(self, connection, schema: str) -> None:
+        """Collects upstream and downstream lineage information for views .
+
+        Args:
+            view (str): name of the view
+
+        """
+        
+        self.projection_lineage_map: Optional[Dict[str, List[Tuple[str, str, str]]]] = None
+
+       
+
+        projection_upstream_lineage_query = sql.text(
+            dedent(
+                """
+            select basename , schemaname , name from vs_projections where schemaname = '%(schema)s' """
+                % {"schema": schema}
+            )
+        )
+
+        refrence_table = []
+        for data in connection.execute(projection_upstream_lineage_query):
+            # refrence_table.append(data)
+            refrence_table.append({"basename" : data["basename"] , "schemaname":data["schemaname"] ,
+                                   "name":data["name"], } )
+            # refrence_table = data["reference_table_name"]
+
+        num_edges: int = 0
+
+        try:
+            self.projection_lineage_map = defaultdict(list)
+            for lineage in refrence_table:
+                
+                downstream = f"{lineage['schemaname']}.{lineage['name']}"
+                
+                
+                upstream = f"{lineage['schemaname']}.{lineage['basename']}"
+
+                view_upstream: str = upstream
+                view_name: str = downstream
+                self.projection_lineage_map[view_name].append(
+                    # (<upstream_table_name>, <empty_json_list_of_upstream_table_columns>, <empty_json_list_of_downstream_view_columns>)
+                    (view_upstream, "[]", "[]")
+                )
+                
+                
+                num_edges += 1
+                
+                return self.projection_lineage_map
+
+        except Exception as e:
+            self.warn(
+                logger,
+                "view_upstream_lineage",
+                "Extracting the upstream & Downstream view lineage from vertica failed."
+                + f"Please check your permissions. Continuing...\nError was {e}.",
+            )
+
+        logger.info(
+            f"A total of {num_edges} View upstream edges found found for {schema}"
+        )

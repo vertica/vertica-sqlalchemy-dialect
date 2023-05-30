@@ -25,11 +25,12 @@ from . import sample_objects as sample
 @pytest.fixture(scope="module")
 def vconn():
     engine = sa.create_engine('vertica+vertica_python://dbadmin:abc123@localhost:5433/VMart')
+    conn = engine.connect()
     try:     
-        conn = engine.connect()
+        yield [engine, conn]
     except:
         print("Failed to connect to the database")
-    yield [engine, conn]
+    
     conn.close()
     engine.dispose()
 
@@ -71,11 +72,16 @@ def test_get_schema_names(vconn):
 
 # TODO Improve this function to verify the output with a regex match
 def test_get_table_comment(vconn):
-    res = vconn[0].dialect.get_table_comment(connection=vconn[1], table_name=sample.sample_table_list["public"][0], schema="public")
-    assert res["properties"]["create_time"]
-    assert res["properties"]["Total_Table_Size"]
+    res = vconn[0].dialect.get_table_comment(connection=vconn[1],    table_name=sample.sample_table_list["public"][0], schema="public")
+    table_comment = []
+    for data in res['properties']:
+        if data['table_name'] == sample.sample_table_list["public"][0]:
+            table_comment.append(data)
+    
+    assert table_comment[0]['create_time']
+    assert table_comment[0]['table_size']
 
-# TODO Improve this function to verify the output with a regex match
+# # TODO Improve this function to verify the output with a regex match
 def test_get_table_oid(vconn):
     res = vconn[0].dialect.get_table_oid(connection=vconn[1], table_name=sample.sample_table_list["public"][1], schema="public")
     # Assert the oid is an int
@@ -173,10 +179,17 @@ def test_denormalize_name(vconn):
 def test_get_pk_constraint(vconn):
     # TODO query doesnt return the result here. Query works from other clients.
     res = vconn[0].dialect.get_pk_constraint(connection=vconn[1], table_name=sample.sample_table_list["public"][0], schema="public")
+    pk_constraint = ''
+    for data in res:
+        if data['tablename'] == sample.sample_table_list["public"][0]:
+            pk_constraint = data['name']
+            
+
     # Assert the no. of unique contraints
     assert len(res)>0
     # Assert sample constraint
-    assert all(k in sample.sample_pk.values() for k in res['name'])
+    assert pk_constraint == sample.sample_pk
+
 
 def test_get_foreign_keys(vconn):
     # TODO Need functionality
@@ -235,15 +248,16 @@ def test_get_ifcachedproj(vconn):
     assert cp in [True,False]
 
 def test_get_projection_comment(vconn):
-    pc = vconn[0].dialect.get_projection_comment(vconn[1], projection_name=sample.sample_projections[1], schema="store")
-    assert pc["properties"]["ROS Count"]\
-    and pc["properties"]["is_segmented"] \
-    and pc["properties"]["Projection Type"] \
-    and pc["properties"]["Partition Key"] \
-    and pc["properties"]["Number of Partition"] \
-    and pc["properties"]["Segmentation_key"] \
-    and pc["properties"]["Projection Size"] \
-    and pc["properties"]["Projection Cached"]
+    pc = vconn[0].dialect.get_projection_comment(vconn[1],  schema="store")
+    projection_name=sample.sample_projections[1]
+    projection_comments = sample.sample_projection_properties
+    properties = []
+    for data in pc['properties']:
+        if data["projection_name"] == projection_name:
+            properties.append(data)
+            
+    assert properties[0] == projection_comments
+
 
 def test_get_model_comment(vconn):
     mc = vconn[0].dialect.get_model_comment(vconn[1], model_name=sample.sample_ml_model, schema="public")
@@ -260,5 +274,82 @@ def test_get_oauth_comment(vconn):
     assert len(oc["properties"]["discovery_url"])>0
     assert bool(h.match(oc["properties"]["discovery_url"]))
     assert len(oc["properties"]["is_fallthrough_enabled"])>0
+    
+    
+    
+def test_get_all_owners(vconn):
+    owner = vconn[0].dialect.get_table_owner(vconn[1],schema='public')
+    table_owner = owner[0][1]
+    assert table_owner == "dbadmin"
+    
+def test_get_all_columns(vconn):
+    res = vconn[0].dialect.get_all_columns(connection=vconn[1], schema="public")
+    table_name=sample.sample_table_list["public"][2]
+  
+    columns = []
+    for data in res:
+        if data['tablename'] == table_name:
+            columns.append(data)
+    # Assert the no. of columns
+    assert len(columns)>0
+    # # Assert sample columns
+    assert all(value["name"] in sample.sample_columns for value in columns)
+    
+    
+def test_get_all_view_columns(vconn):
+    res = vconn[0].dialect.get_all_view_columns(connection=vconn[1], schema="public")
+    # Assert the no. of columns
+    assert len(res)>0
+    # Assert sample columns
+    assert all(value["name"] in sample.sample_view_columns for value in res)
 
 
+def test_get_view_comment(vconn):
+    res = vconn[0].dialect.get_view_comment(connection=vconn[1], schema="public")
+    if res['properties'] is not None:
+        has_comment = True
+    else:
+        has_comment = False
+        
+    assert has_comment == True
+    
+    
+def test_get_view_owner(vconn):
+    owner = vconn[0].dialect.get_view_owner(vconn[1],schema='public')
+    table_owner = owner[0][1]
+    assert table_owner == "dbadmin"
+    
+def test_get_projection_owner(vconn):
+    owner = vconn[0].dialect.get_projection_owner(vconn[1],schema='public')
+    table_owner = owner[0][1]
+    assert table_owner == "dbadmin"
+    
+def test_get_all_projection_columns(vconn):
+    res = vconn[0].dialect.get_all_projection_columns(connection=vconn[1], schema="public")
+    projection_name = 'inventory_fact_super'
+    columns = []
+    for data in res:
+        if data['tablename'] == projection_name:
+            columns.append(data)
+
+    # Assert the no. of columns
+    assert len(res)>0
+    # Assert sample columns
+
+    assert all(value["name"] in sample.sample_projection_columns for value in columns)
+
+def test__populate_view_lineage(vconn):
+    res = vconn[0].dialect._populate_view_lineage(connection=vconn[1], schema="public")
+    upstream = "public.customer_dimension"
+    downstream = next(iter(res.keys()))
+    
+    assert res[downstream][0][0] == upstream
+    
+    
+def test__populate_projection_lineage(vconn):
+    res = vconn[0].dialect._populate_projection_lineage(connection=vconn[1], schema="public")
+    upstream = "public.date_dimension"
+    downstream = next(iter(res.keys()))
+    
+    
+    assert res[downstream][0][0] == upstream
