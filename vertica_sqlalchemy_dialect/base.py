@@ -538,11 +538,8 @@ class VerticaDialect(default.DefaultDialect):
         columns = []
         
         for row in connection.execute(sct):
-           
-            timestamp = str(row[0])
-            datetime_obj = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f%z")
-            converted_timestamp = datetime_obj.strftime("%y-%m-%d %H-%M")
-            columns.append({'create_time': str(converted_timestamp), 'table_name': row[1]})
+
+            columns.append({'create_time': str(row[0]), 'table_name': row[1]})
         table_size_dict={}
         for table_size in connection.execute(sts):
         
