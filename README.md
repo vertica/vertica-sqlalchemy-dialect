@@ -17,7 +17,7 @@ You will need the following softwares to run, build and test the dialect. Everyt
 
 1. Python 3.x or higher
 2. pip 22 or higher
-3. SQLAlchemy > 1.3.24 and < 2.0
+3. SQLAlchemy 1.4.48
 4. vertica-python 1.1.1 or higher
 
 ### Vertica-Python
