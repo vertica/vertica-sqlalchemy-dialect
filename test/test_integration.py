@@ -341,15 +341,23 @@ def test_get_all_projection_columns(vconn):
 def test__populate_view_lineage(vconn):
     res = vconn[0].dialect._populate_view_lineage(connection=vconn[1], schema="public")
     upstream = "public.customer_dimension"
-    downstream = next(iter(res.keys()))
-    
+    downstream = next(iter(res.keys()))    
     assert res[downstream][0][0] == upstream
     
     
 def test__populate_projection_lineage(vconn):
     res = vconn[0].dialect._populate_projection_lineage(connection=vconn[1], schema="public")
     upstream = "public.date_dimension"
-    downstream = next(iter(res.keys()))
-    
-    
+    downstream = next(iter(res.keys()))   
     assert res[downstream][0][0] == upstream
+    
+def test_get_database_properties(vconn):
+    res = vconn[0].dialect._get_database_properties(connection = vconn[1],database = "Vmart")
+    assert res['cluster_type'] == 'Enterprise'
+    assert type(res['cluster_size']) == str
+
+def test_get_schema_properties(vconn):
+    res = vconn[0].dialect._get_schema_properties(connection = vconn[1], schema = 'public')
+    assert int(res['projection_count']) >= 9
+    assert type(res['udx_list']) == str
+    assert type(res['udx_language']) == str
