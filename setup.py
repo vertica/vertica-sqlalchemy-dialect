@@ -39,7 +39,7 @@ setup(
     ),
     install_requires=(
         'six >= 1.10.0',
-        'sqlalchemy>=1.3.24,<=1.4.40',
+        'sqlalchemy<=2.0.0',
         'vertica-python>=1.1.1'
     ),
     extras_require={
