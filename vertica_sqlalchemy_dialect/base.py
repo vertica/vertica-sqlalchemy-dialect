@@ -1152,48 +1152,48 @@ class VerticaDialect(default.DefaultDialect):
         src = sql.text(dedent("""
                 SELECT ros_count , LOWER(projection_name)
                 FROM v_monitor.projection_storage
-                WHERE lower(projection_schema) = '%(schema)s'
+                WHERE projection_schema = '%(schema)s'
 
             """ % {'schema': schema}))
         
         projection_type =sql.text(dedent("""
-                SELECT is_super_projection,is_key_constraint_projection,is_aggregate_projection,has_expressions ,LOWER(projection_name)
+                SELECT DISTINCT is_super_projection,is_key_constraint_projection,is_aggregate_projection,has_expressions ,LOWER(projection_name)
                 FROM v_catalog.projections
-                WHERE lower(projection_schema) = '%(schema)s' 
+                WHERE projection_schema = '%(schema)s' 
                 """ % {'schema': schema}))
         
         
         is_segmented = sql.text(dedent("""
                 SELECT is_segmented , segment_expression , LOWER(projection_name)
                 FROM v_catalog.projections 
-                WHERE lower(projection_schema) = '%(schema)s'
+                WHERE projection_schema = '%(schema)s'
             """ % {'schema': schema}))
         
         
         partition_key = sql.text(dedent("""
                 SELECT  DISTINCT LOWER(projection_name) ,  partition_key 
                 FROM v_monitor.partitions
-                WHERE lower(table_schema) = '%(schema)s'
+                WHERE table_schema = '%(schema)s'
               
             """ % {'schema': schema}))
         
         partition_num = sql.text(dedent("""
                 SELECT  COUNT(ros_id) , LOWER(projection_name)
                 FROM v_monitor.partitions
-                WHERE lower(table_schema) = '%(schema)s'
+                WHERE table_schema = '%(schema)s'
                 GROUP BY projection_name
             """ % {'schema': schema}))
         
         projection_size = sql.text(dedent("""
             SELECT used_bytes , LOWER(projection_name) 
             from v_monitor.projection_storage
-            WHERE lower(projection_schema) = '%(schema)s'
+            WHERE projection_schema = '%(schema)s'
         """ % {'schema': schema}))
         
         projection_cache = sql.text(dedent("""
             SELECT COUNT(*) , object_name
             FROM DEPOT_PIN_POLICIES
-            WHERE lower(schema_name) = '%(schema)s'
+            WHERE schema_name = '%(schema)s'
             GROUP BY object_name 
             """ % {'schema': schema}))
         
