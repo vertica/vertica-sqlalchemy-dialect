@@ -1272,14 +1272,14 @@ class VerticaDialect(default.DefaultDialect):
                         a["Partition_Size"] = str(partition_number[1])
                     
         for projection_cached in connection.execute(projection_cache):
-            if projection_cached[1] in all_projections:
+           
                 
-                for a in projection_comment:
-                    if a['projection_name'] == projection_cached[1]:
-                        if projection_cached[0] > 0:
-                            a["Projection_Cached"] = True
-                        else:
-                            a["Projection_Cached"] = False
+            for a in projection_comment:
+                if a['projection_name'] == projection_cached[1]:
+                    if projection_cached[0] > 0:
+                        a["Projection_Cached"] = True
+                    else:
+                        a["Projection_Cached"] = False
                         
 
         return {"text": "Vertica physically stores table data in projections, \
