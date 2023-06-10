@@ -256,6 +256,8 @@ def test_get_projection_comment(vconn):
         if data["projection_name"] == projection_name:
             properties.append(data)
             
+    print(properties[0])
+            
     assert properties[0] == projection_comments
 
 
