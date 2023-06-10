@@ -248,7 +248,7 @@ def test_get_ifcachedproj(vconn):
     assert cp in [True,False]
 
 def test_get_projection_comment(vconn):
-    pc = vconn[0].dialect.get_projection_comment(vconn[1],  schema="store")
+    pc = vconn[0].dialect.get_projection_comment(vconn[1], projection_name = sample.sample_projections[1], schema="store")
     projection_name=sample.sample_projections[1]
     projection_comments = sample.sample_projection_properties
     properties = []
@@ -283,7 +283,7 @@ def test_get_all_owners(vconn):
     assert table_owner == "dbadmin"
     
 def test_get_all_columns(vconn):
-    res = vconn[0].dialect.get_all_columns(connection=vconn[1], schema="public")
+    res = vconn[0].dialect.get_all_columns(connection=vconn[1], table = sample.sample_table_list["public"][2] ,  schema="public")
     table_name=sample.sample_table_list["public"][2]
   
     columns = []
@@ -297,7 +297,7 @@ def test_get_all_columns(vconn):
     
     
 def test_get_all_view_columns(vconn):
-    res = vconn[0].dialect.get_all_view_columns(connection=vconn[1], schema="public")
+    res = vconn[0].dialect.get_all_view_columns(connection=vconn[1],view_name = sample.sample_view,  schema="public")
     # Assert the no. of columns
     assert len(res)>0
     # Assert sample columns
@@ -305,7 +305,7 @@ def test_get_all_view_columns(vconn):
 
 
 def test_get_view_comment(vconn):
-    res = vconn[0].dialect.get_view_comment(connection=vconn[1], schema="public")
+    res = vconn[0].dialect.get_view_comment(connection=vconn[1],view_name = sample.sample_view, schema="public")
     if res['properties'] is not None:
         has_comment = True
     else:
@@ -325,7 +325,7 @@ def test_get_projection_owner(vconn):
     assert table_owner == "dbadmin"
     
 def test_get_all_projection_columns(vconn):
-    res = vconn[0].dialect.get_all_projection_columns(connection=vconn[1], schema="public")
+    res = vconn[0].dialect.get_all_projection_columns(connection=vconn[1], projection_name='inventory_fact_super', schema="public")
     projection_name = 'inventory_fact_super'
     columns = []
     for data in res:
