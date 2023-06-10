@@ -176,7 +176,7 @@ class VerticaInspector(reflection.Inspector):
             self.bind, table, schema
         )
 
-    def get_projection_comment(self, schema=None, **kw):
+    def get_projection_comment(self, projection, schema=None, **kw):
         """Return information about the table properties for ``table_name``.
             as key and value.
 
@@ -186,7 +186,7 @@ class VerticaInspector(reflection.Inspector):
         """
 
         return self.dialect.get_projection_comment(
-            self.bind, schema, info_cache=self.info_cache, **kw
+            self.bind, projection, schema, info_cache=self.info_cache, **kw
         )
 
     def get_model_comment(self, model_name, schema=None, **kw):
@@ -258,37 +258,37 @@ class VerticaInspector(reflection.Inspector):
             self.bind, schema, info_cache=self.info_cache, **kw
         )
         
-    def get_all_columns(self, schema: Optional[str] = None, **kw: Any):
+    def get_all_columns(self, table, schema: Optional[str] = None, **kw: Any):
         r"""Return all table columns names within a particular schema. """
 
         return self.dialect.get_all_columns(
-            self.bind, schema, info_cache=self.info_cache, **kw
+            self.bind,table, schema, info_cache=self.info_cache, **kw
         )
 
-    def get_pk_constraint(self, schema=None, **kw):
+    # def get_pk_constraint(self, schema=None, **kw):
         
-        return self.dialect.get_pk_constraint(
-            self.bind, schema, info_cache=self.info_cache, **kw
-        )
+    #     return self.dialect.get_pk_constraint(
+    #         self.bind, schema, info_cache=self.info_cache, **kw
+    #     )
         
-    def get_table_comment(self, table: Optional[str] = None,schema: Optional[str] = None,**kw):
+    # def get_table_comment(self, table: Optional[str] = None,schema: Optional[str] = None,**kw):
         
-        return self.dialect.get_table_comment(
-            self.bind,table , schema, info_cache=self.info_cache, **kw
-        )
+    #     return self.dialect.get_table_comment(
+    #         self.bind,table , schema, info_cache=self.info_cache, **kw
+    #     )
         
-    def get_all_view_columns(self, schema: Optional[str] = None, **kw: Any):
+    def get_all_view_columns(self, view, schema: Optional[str] = None, **kw: Any):
         r"""Return all view columns names within a particular schema. """
 
         return self.dialect.get_all_view_columns(
-            self.bind, schema, info_cache=self.info_cache, **kw
+            self.bind,view , schema, info_cache=self.info_cache, **kw
         )
 
-    def get_view_comment(self,  schema: Optional[str] = None, **kw: Any):
+    def get_view_comment(self, view , schema: Optional[str] = None, **kw: Any):
         r"""Return view comments within a particular schema. """
 
         return self.dialect.get_view_comment(
-            self.bind, schema, info_cache=self.info_cache, **kw
+            self.bind, view, schema, info_cache=self.info_cache, **kw
         )
         
         
@@ -306,11 +306,11 @@ class VerticaInspector(reflection.Inspector):
             self.bind, schema , **kw
         )  
         
-    def get_all_projection_columns(self, schema: Optional[str] = None, **kw: Any):
+    def get_all_projection_columns(self, projection, schema: Optional[str] = None, **kw: Any):
         r"""Return all projection columns names within a particular schema. """
 
         return self.dialect.get_all_projection_columns(
-            self.bind, schema, info_cache=self.info_cache, **kw
+            self.bind, projection , schema, info_cache=self.info_cache, **kw
         )
         
     def get_projection_owner(self, schema: Optional[str] = None, **kw: Any):
@@ -523,6 +523,8 @@ class VerticaDialect(default.DefaultDialect):
         else:
             schema_condition = "1"
 
+        
+        tables = table_name
         sct = sql.text(dedent("""
                 SELECT create_time , table_name
                 FROM v_catalog.tables
@@ -538,16 +540,17 @@ class VerticaDialect(default.DefaultDialect):
         columns = []
         
         for row in connection.execute(sct):
-
-            columns.append({'create_time': str(row[0]), 'table_name': row[1]})
+            
+            if row[1] in tables:
+                columns.append({'create_time': str(row[0]), 'table_name': row[1]})
         table_size_dict={}
         for table_size in connection.execute(sts):
-        
-            if table_size[1] not in table_size_dict:
-                table_size_dict[table_size[1]] = table_size[0] / 1024
+            if row[1] in tables:
+                if table_size[1] not in table_size_dict:
+                    table_size_dict[table_size[1]] = table_size[0] / 1024
 
-            else:
-                table_size_dict[table_size[1]] += table_size[0] / 1024
+                else:
+                    table_size_dict[table_size[1]] += table_size[0] / 1024
                         
         for a in columns:
             if a['table_name'] in table_size_dict:
@@ -925,12 +928,14 @@ class VerticaDialect(default.DefaultDialect):
 
         return [row[0] for row in c]
 
-    def get_pk_constraint(self, connection,schema: None, **kw):
+    def get_pk_constraint(self, connection,table_name, schema: None, **kw):
         if schema is not None:
             schema_condition = "lower(table_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
         else:
             schema_condition = "1"
+            
+        all_tables = table_name
 
         spk = sql.text(dedent("""
                 SELECT column_name ,table_name
@@ -944,8 +949,8 @@ class VerticaDialect(default.DefaultDialect):
         for row in connection.execute(spk):
             columns = row['column_name']
             table_name = row['table_name'].lower()
-            # print(row)
-            pk_columns.append({'constrained_columns': [columns], 'name': [columns],"tablename":table_name})
+            if table_name in all_tables:
+                pk_columns.append({'constrained_columns': [columns], 'name': [columns],"tablename":table_name})
 
         return pk_columns
 
@@ -1147,7 +1152,9 @@ class VerticaDialect(default.DefaultDialect):
         return cached_projection
 
     @reflection.cache
-    def get_projection_comment(self, connection, schema=None, **kw):
+    def get_projection_comment(self, connection, projection_name,  schema=None, **kw):
+        
+        all_projections = projection_name
         
         src = sql.text(dedent("""
                 SELECT ros_count , LOWER(projection_name)
@@ -1202,36 +1209,40 @@ class VerticaDialect(default.DefaultDialect):
         ros_count = {}
         for data in connection.execute(src):
             # ros_count = data['ros_count']
-            ros_count = {"ROS_Count": data[0] , "projection_name" : data[1]}
-            projection_comment.append(ros_count)
+            if data[1] in all_projections:
+                ros_count = {"ROS_Count": data[0] , "projection_name" : data[1]}
+                projection_comment.append(ros_count)
         
         
      
         lst = ["is_super_projection", "is_key_constraint_projection",
                    "is_aggregate_projection", "has_expressions"]
         
-        for ptype in connection.execute(projection_type):    
-            for i, value in enumerate(ptype):
-                if value is True:
-                    for a in projection_comment:
-                        if a['projection_name'] == ptype[4]:
-                            if "Projection_Type" in a:
-                                a["Projection_Type"] = a["Projection_Type"] + ", "+str(lst[i])
-                            else:
-                                a["Projection_Type"] = str(lst[i])
+        for ptype in connection.execute(projection_type):  
+            if ptype[4] in all_projections:
+                for i, value in enumerate(ptype):
+                    if value is True:
+                        for a in projection_comment:
+                            if a['projection_name'] == ptype[4]:
+                                if "Projection_Type" in a:
+                                    a["Projection_Type"] = a["Projection_Type"] + ", "+str(lst[i])
+                                else:
+                                    a["Projection_Type"] = str(lst[i])
                                  
         for projection_segment in connection.execute(is_segmented):
+            if projection_segment[2] in all_projections:
+                
             
-            for a in projection_comment:
-                if a['projection_name'] == projection_segment[2]:
-                    a["is_segmented"] = str(projection_segment[0])
-                    a["Segmentation_key"] = str(projection_segment[1])
+                for a in projection_comment:
+                    if a['projection_name'] == projection_segment[2]:
+                        a["is_segmented"] = str(projection_segment[0])
+                        a["Segmentation_key"] = str(projection_segment[1])
          
         for partion_keys in connection.execute(partition_key):
-            for a in projection_comment:
-                
-                if a['projection_name'] == partion_keys[0]:
-                    a["Partition_Key"] = str(partion_keys[1])
+            if partion_keys[0] in all_projections: 
+                for a in projection_comment:
+                    if a['projection_name'] == partion_keys[0]:
+                        a["Partition_Key"] = str(partion_keys[1])
               
 
      
@@ -1253,24 +1264,24 @@ class VerticaDialect(default.DefaultDialect):
              
            
         for partition_number in connection.execute(partition_num):
-            for a in projection_comment:
-                if a['projection_name'] == partition_number[0]:
-                    a["Partition_Size"] = str(partition_number[1])
+            
+            if partition_number[0] in all_projections:
+                
+                for a in projection_comment:
+                    if a['projection_name'] == partition_number[0]:
+                        a["Partition_Size"] = str(partition_number[1])
                     
         for projection_cached in connection.execute(projection_cache):
-            for a in projection_comment:
-                if a['projection_name'] == projection_cached[1]:
-                    if projection_cached[0] > 0:
-                        a["Projection_Cached"] = True
-                    else:
-                        a["Projection_Cached"] = False
+            if projection_cached[1] in all_projections:
+                
+                for a in projection_comment:
+                    if a['projection_name'] == projection_cached[1]:
+                        if projection_cached[0] > 0:
+                            a["Projection_Cached"] = True
+                        else:
+                            a["Projection_Cached"] = False
                         
-        
-     
-            
-            
-        # print(projection_comment)
-        # exit()
+
         return {"text": "Vertica physically stores table data in projections, \
             which are collections of table columns. Projections store data in a format that optimizes query execution \
             For more info on projections and corresponding properties check out the Vertica Docs: https://www.vertica.com/docs",
@@ -1424,7 +1435,7 @@ class VerticaDialect(default.DefaultDialect):
         return owner_info
     
     @reflection.cache
-    def get_all_columns(self, connection,schema=None, **kw):
+    def get_all_columns(self, connection, table, schema=None, **kw):
         if schema is not None:
             schema_condition = "lower(table_schema) = '%(schema)s'" % {
                 'schema': schema.lower()}
@@ -1561,7 +1572,7 @@ class VerticaDialect(default.DefaultDialect):
         return column_info
     
     @reflection.cache
-    def get_all_view_columns(self, connection,schema=None, **kw):
+    def get_all_view_columns(self, connection, view_name , schema=None, **kw):
        
         s = sql.text(dedent("""
             SELECT column_name, data_type, '' as column_default, true as is_nullable,lower(table_name) as table_name
@@ -1596,7 +1607,7 @@ class VerticaDialect(default.DefaultDialect):
         return columns
     
     @reflection.cache
-    def get_view_comment(self, connection, schema=None, **kw):
+    def get_view_comment(self, connection, view_name,  schema=None, **kw):
 
         sct = sql.text(dedent("""
                 SELECT create_time , table_name
@@ -1606,10 +1617,11 @@ class VerticaDialect(default.DefaultDialect):
                 
             """ % {'schema': schema.lower()}))
 
-       
+        all_views = view_name
         columns = []
         for row in connection.execute(sct):
-            columns.append({'create_time': str(row[0]), 'table_name': row[1]})
+            if row[1] in all_views:
+                columns.append({'create_time': str(row[0]), 'table_name': row[1]})
 
         return {"text": "References the properties of a native table in Vertica. \
         Vertica physically stores table data in projections, which are collections of table columns. \
@@ -1704,7 +1716,7 @@ class VerticaDialect(default.DefaultDialect):
         )
         
     @reflection.cache
-    def get_all_projection_columns(self, connection,schema=None, **kw):
+    def get_all_projection_columns(self, connection,projection_name, schema=None, **kw):
        
         s = sql.text(dedent("""
             SELECT projection_column_name, data_type, '' as column_default, true as is_nullable,lower(projection_name) as projection_name
