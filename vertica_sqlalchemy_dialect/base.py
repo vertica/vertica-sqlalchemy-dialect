@@ -1265,11 +1265,11 @@ class VerticaDialect(default.DefaultDialect):
            
         for partition_number in connection.execute(partition_num):
             
-            if partition_number[0] in all_projections:
-                
-                for a in projection_comment:
-                    if a['projection_name'] == partition_number[0]:
-                        a["Partition_Size"] = str(partition_number[1])
+
+            
+            for a in projection_comment:
+                if a['projection_name'] == partition_number[0]:
+                    a["Partition_Size"] = str(partition_number[1])
                     
         for projection_cached in connection.execute(projection_cache):
            
