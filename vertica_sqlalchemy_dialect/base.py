@@ -543,6 +543,7 @@ class VerticaDialect(default.DefaultDialect):
             
             if row[1] in tables:
                 columns.append({'create_time': str(row[0]), 'table_name': row[1]})
+                
         table_size_dict={}
         for table_size in connection.execute(sts):
             if row[1] in tables:
@@ -1154,7 +1155,8 @@ class VerticaDialect(default.DefaultDialect):
     @reflection.cache
     def get_projection_comment(self, connection, projection_name,  schema=None, **kw):
         
-        all_projections = projection_name
+        
+        
         
         src = sql.text(dedent("""
                 SELECT ros_count , LOWER(projection_name)
@@ -1209,40 +1211,38 @@ class VerticaDialect(default.DefaultDialect):
         ros_count = {}
         for data in connection.execute(src):
             # ros_count = data['ros_count']
-            if data[1] in all_projections:
-                ros_count = {"ROS_Count": data[0] , "projection_name" : data[1]}
-                projection_comment.append(ros_count)
         
+            ros_count = {"ROS_Count": data[0] , "projection_name" : data[1]}
+            projection_comment.append(ros_count)
+    
         
      
         lst = ["is_super_projection", "is_key_constraint_projection",
                    "is_aggregate_projection", "has_expressions"]
         
         for ptype in connection.execute(projection_type):  
-            if ptype[4] in all_projections:
-                for i, value in enumerate(ptype):
-                    if value is True:
-                        for a in projection_comment:
-                            if a['projection_name'] == ptype[4]:
-                                if "Projection_Type" in a:
-                                    a["Projection_Type"] = a["Projection_Type"] + ", "+str(lst[i])
-                                else:
-                                    a["Projection_Type"] = str(lst[i])
+           
+            for i, value in enumerate(ptype):
+                if value is True:
+                    for a in projection_comment:
+                        if a['projection_name'] == ptype[4]:
+                            if "Projection_Type" in a:
+                                a["Projection_Type"] = a["Projection_Type"] + ", "+str(lst[i])
+                            else:
+                                a["Projection_Type"] = str(lst[i])
                                  
         for projection_segment in connection.execute(is_segmented):
-            if projection_segment[2] in all_projections:
-                
-            
-                for a in projection_comment:
-                    if a['projection_name'] == projection_segment[2]:
-                        a["is_segmented"] = str(projection_segment[0])
-                        a["Segmentation_key"] = str(projection_segment[1])
+
+            for a in projection_comment:
+                if a['projection_name'] == projection_segment[2]:
+                    a["is_segmented"] = str(projection_segment[0])
+                    a["Segmentation_key"] = str(projection_segment[1])
          
         for partion_keys in connection.execute(partition_key):
-            if partion_keys[0] in all_projections: 
-                for a in projection_comment:
-                    if a['projection_name'] == partion_keys[0]:
-                        a["Partition_Key"] = str(partion_keys[1])
+           
+            for a in projection_comment:
+                if a['projection_name'] == partion_keys[0]:
+                    a["Partition_Key"] = str(partion_keys[1])
               
 
      
@@ -1265,8 +1265,7 @@ class VerticaDialect(default.DefaultDialect):
            
         for partition_number in connection.execute(partition_num):
             
-
-            
+           
             for a in projection_comment:
                 if a['projection_name'] == partition_number[0]:
                     a["Partition_Size"] = str(partition_number[1])
@@ -1275,13 +1274,12 @@ class VerticaDialect(default.DefaultDialect):
            
                 
             for a in projection_comment:
-                if a['projection_name'] == projection_cached[1]:
-                    if projection_cached[0] > 0:
-                        a["Projection_Cached"] = True
-                    else:
-                        a["Projection_Cached"] = False
+              
+                if projection_cached[0] > 0:
+                    a["Projection_Cached"] = True
+                else:
+                    a["Projection_Cached"] = False
                         
-
         return {"text": "Vertica physically stores table data in projections, \
             which are collections of table columns. Projections store data in a format that optimizes query execution \
             For more info on projections and corresponding properties check out the Vertica Docs: https://www.vertica.com/docs",
@@ -1580,7 +1578,6 @@ class VerticaDialect(default.DefaultDialect):
             where lower(table_schema) = '%(schema)s'
         """ % {'schema': schema.lower()}))
 
-  
         columns = []
        
         for row in connection.execute(s):
