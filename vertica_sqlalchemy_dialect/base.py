@@ -1187,7 +1187,7 @@ class VerticaDialect(default.DefaultDialect):
             """ % {'schema': schema}))
         
         partition_num = sql.text(dedent("""
-                SELECT  COUNT(ros_id) , LOWER(projection_name)
+                SELECT  COUNT(ros_id) as Partition_Size , LOWER(projection_name)
                 FROM v_monitor.partitions
                 WHERE table_schema = '%(schema)s'
                 GROUP BY projection_name
@@ -1265,10 +1265,10 @@ class VerticaDialect(default.DefaultDialect):
            
         for partition_number in connection.execute(partition_num):
             
-           
+            
             for a in projection_comment:
-                if a['projection_name'] == partition_number[0]:
-                    a["Partition_Size"] = str(partition_number[1])
+                if a['projection_name'].lower() == partition_number[1]:
+                    a["Partition_Size"] = str(partition_number['Partition_Size'])
                     
         for projection_cached in connection.execute(projection_cache):
            
