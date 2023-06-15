@@ -22,7 +22,7 @@ with open("README.rst", "r") as f:
     description = f.read()
 
 
-version_info = (0, 0, 5)
+version_info = (0, 0, 6)
 
 version = '.'.join(map(str, version_info))
 
