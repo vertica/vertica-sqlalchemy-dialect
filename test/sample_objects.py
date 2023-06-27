@@ -17,12 +17,13 @@
 # limitations under the License.
 
 sample_table_list = [
-    'customer_dimension',
+    
     'agar_dish',
     'agar_dish_1',
     'agar_dish_2',
     'baseball',
     'clicks',
+    'customer_dimension',
     'date_dimension',
     'dem_votes',
     'employee',

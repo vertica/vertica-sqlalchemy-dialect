@@ -49,7 +49,7 @@ def test_has_schema(vconn):
     assert sc2 == True
 
 def test_has_table(vconn):
-    res = vconn[0].dialect.has_table(connection=vconn[1], table_name=sample.sample_table_list[0], schema="public")
+    res = vconn[0].dialect.has_table(connection=vconn[1], table_name=sample.sample_table_list[5], schema="public")
     assert res == True
 
 def test_has_sequence(vconn):
@@ -72,13 +72,13 @@ def test_get_schema_names(vconn):
 
 # TODO Improve this function to verify the output with a regex match
 def test_get_table_comment(vconn):
-    res = vconn[0].dialect.get_table_comment(connection=vconn[1], table_name=sample.sample_table_list[0], schema="public")
+    res = vconn[0].dialect.get_table_comment(connection=vconn[1], table_name=sample.sample_table_list[5], schema="public")
     assert res['properties']['Table Size'] == '2119 KB'
 
 
 # TODO Improve this function to verify the output with a regex match
 def test_get_table_oid(vconn):
-    res = vconn[0].dialect.get_table_oid(connection=vconn[1], table_name=sample.sample_table_list[0], schema="public")
+    res = vconn[0].dialect.get_table_oid(connection=vconn[1], table_name=sample.sample_table_list[5], schema="public")
     # Assert the oid is an int
     assert type(res) == int
     # Assert the format of the oid
@@ -130,7 +130,8 @@ def test_get_temp_view_names(vconn):
     assert sample.sample_view in res
 
 def test_get_columns(vconn):
-    res = vconn[0].dialect.get_columns(connection=vconn[1], table_name=sample.sample_table_list[4], schema="public")
+    res = vconn[0].dialect.get_columns(connection=vconn[1], table_name=sample.sample_table_list[25], schema="public")
+    print(res)
     # Assert the no. of columns
     assert len(res)>0
     # Assert sample columns
