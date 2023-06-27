@@ -140,7 +140,7 @@ def test_get_columns(vconn):
 def test_get_unique_constraints(vconn):
     # TODO query doesnt return the result here. Query works from other clients.
     assert True
-    ucons = vconn[0].dialect.get_unique_constraints(connection=vconn[1], table_name=sample.sample_table_list[0], schema="public")
+    ucons = vconn[0].dialect.get_unique_constraints(connection=vconn[1], table_name=sample.sample_table_list[5], schema="public")
     # Assert the no. of unique contraints
     assert len(ucons)>0
     # Assert sample constraint
@@ -169,7 +169,7 @@ def test_denormalize_name(vconn):
 
 def test_get_pk_constraint(vconn):
     # TODO query doesnt return the result here. Query works from other clients.
-    res = vconn[0].dialect.get_pk_constraint(connection=vconn[1], table_name=sample.sample_table_list[0], schema="public")
+    res = vconn[0].dialect.get_pk_constraint(connection=vconn[1], table_name=sample.sample_table_list[5], schema="public")
 
 #     # Assert the no. of unique contraints
     assert len(res)>0
