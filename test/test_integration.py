@@ -88,15 +88,14 @@ def test_get_table_oid(vconn):
 def test_get_projection_names(vconn):
     res = vconn[0].dialect.get_projection_names(connection=vconn[1], schema="public")
     # Assert the no. of projections
-    assert len(res) == 9
+    assert len(res) == 41
     # Assert sample projection
     assert sample.sample_projections ==  res
 
 def test_get_table_names(vconn):
     res = vconn[0].dialect.get_table_names(connection=vconn[1], schema="public")
-    print(res)
     # Assert the no. of tables
-    assert len(res) == 10
+    assert len(res) == 42
     # Assert sample tables
     assert  sample.sample_table_list == res
 
@@ -140,7 +139,7 @@ def test_get_columns(vconn):
 def test_get_unique_constraints(vconn):
     # TODO query doesnt return the result here. Query works from other clients.
     assert True
-    ucons = vconn[0].dialect.get_unique_constraints(connection=vconn[1], table_name=sample.sample_table_list["store"][0], schema="store")
+    ucons = vconn[0].dialect.get_unique_constraints(connection=vconn[1], table_name=sample.sample_table_list[0], schema="public")
     # Assert the no. of unique contraints
     assert len(ucons)>0
     # Assert sample constraint
@@ -201,7 +200,7 @@ def test_get_models_names(vconn):
 
 def test_get_extra_tags(vconn):
     extra_tags = vconn[0].dialect._get_extra_tags(vconn[1], name="table", schema="public")
-    assert len(extra_tags)==10
+    assert len(extra_tags)==42
     assert all(value in extra_tags for value in sample.sample_tags)
 
 def test_get_ros_count(vconn):
