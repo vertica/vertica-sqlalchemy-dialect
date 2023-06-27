@@ -16,9 +16,93 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-sample_table_list = ['customer_dimension', 'date_dimension', 'employee_dimension', 'inventory_fact', 'product_dimension', 'promotion_dimension', 'shipping_dimension', 'vendor_dimension', 'vmart_load_success', 'warehouse_dimension']
+sample_table_list = [
+    'customer_dimension',
+    'agar_dish',
+    'agar_dish_1',
+    'agar_dish_2',
+    'baseball',
+    'clicks',
+    'date_dimension',
+    'dem_votes',
+    'employee',
+    'employee_dimension',
+    'faithful',
+    'faithful_testing',
+    'faithful_training',
+    'house84',
+    'house84_clean',
+    'house84_test',
+    'house84_train',
+    'inventory_fact',
+    'iris',
+    'iris1',
+    'iris2',
+    'mtcars',
+    'mtcars_test',
+    'mtcars_train',
+    'phrases',
+    'product_dimension',
+    'promotion_dimension',
+    'readings',
+    'rep_votes',
+    'salary_data',
+    'sampletemp',
+    'shipping_dimension',
+    'small_input_impute',
+    'small_svd',
+    'temp_data',
+    'titanic_testing',
+    'titanic_training',
+    'transaction_data',
+    'vendor_dimension',
+    'vmart_load_success',
+    'warehouse_dimension',
+    'world'
+]
 sample_temp_table = "sampletemp"
-sample_projections = ['date_dimension_super', 'product_dimension_super', 'promotion_dimension_super', 'vendor_dimension_super', 'customer_dimension_super', 'employee_dimension_super', 'warehouse_dimension_super', 'shipping_dimension_super', 'inventory_fact_super']
+sample_projections = [
+    'date_dimension_super', 
+    'product_dimension_super', 
+    'promotion_dimension_super', 
+    'vendor_dimension_super', 'customer_dimension_super', 
+    'employee_dimension_super', 
+    'warehouse_dimension_super', 
+    'shipping_dimension_super', 
+    'inventory_fact_super',
+    'readings_topk',
+    'clicks_agg',
+    'phrases_super',
+    'sampletemp_super',
+    'mtcars_super',
+    'mtcars_train_super',
+    'mtcars_test_super',
+    'iris_super',
+    'iris1_super',
+    'iris2_super',
+    'faithful_super',
+    'faithful_testing_super',
+    'faithful_training_super',
+    'baseball_super',
+    'transaction_data_super',
+    'salary_data_super',
+    'agar_dish_super',
+    'agar_dish_1_super',
+    'agar_dish_2_super',
+    'house84_super',
+    'house84_clean_super',
+    'small_input_impute_super',
+    'titanic_training_super',
+    'titanic_testing_super',
+    'small_svd_super',
+    'employee_super',
+    'temp_data_super',
+    'world_super',
+    'dem_votes_super',
+    'rep_votes_super',
+    'house84_train_super',
+    'house84_test_super'
+]
 sample_view = "sampleview"
 sample_columns = [
     "product_key",
@@ -84,3 +168,5 @@ sample_ml_model = "naive_house84_model"
 
 sample_oauth_name = "v_oauth"
 sample_projection_properties = {'text': 'Vertica physically stores table data in projections,             which are collections of table columns. Projections store data in a format that optimizes query execution             For more info on projections and corresponding properties check out the Vertica Docs: https://www.vertica.com/docs', 'properties': {'ROS_Count': '1', 'Projection_Type': 'is_super_projection', 'is_segmented': 'True', 'Segmentation_key': 'hash(product_dimension.product_key, product_dimension.product_version)', 'projection_size': '19 KB', 'Partition_Key': 'Not Available', 'Partition_Size': '0', 'Projection_Cached': 'False'}}
+
+
