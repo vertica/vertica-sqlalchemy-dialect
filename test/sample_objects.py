@@ -16,9 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-sample_table_list = {"store":["store_orders_fact"],"public": ["customer_dimension","employee_dimension","product_dimension", "vendor_dimension"]}
+sample_table_list = ['customer_dimension', 'date_dimension', 'employee_dimension', 'inventory_fact', 'product_dimension', 'promotion_dimension', 'shipping_dimension', 'vendor_dimension', 'vmart_load_success', 'warehouse_dimension']
 sample_temp_table = "sampletemp"
-sample_projections = ["employee_super", "store_orders_fact_super", "ytd_orders"]
+sample_projections = ['date_dimension_super', 'product_dimension_super', 'promotion_dimension_super', 'vendor_dimension_super', 'customer_dimension_super', 'employee_dimension_super', 'warehouse_dimension_super', 'shipping_dimension_super', 'inventory_fact_super']
 sample_view = "sampleview"
 sample_columns = [
     "product_key",
@@ -78,9 +78,9 @@ sample_pk = ['customer_key']
 
 sample_model_list = ["naive_house84_model"]
 
-sample_tags = {"sampletemp": "dbadmin", "employee_dimension": "dbadmin", "clicks": "dbadmin"}
+sample_tags = {'customer_dimension': 'dbadmin', 'product_dimension': 'dbadmin', 'promotion_dimension': 'dbadmin', 'date_dimension': 'dbadmin', 'vendor_dimension': 'dbadmin', 'employee_dimension': 'dbadmin', 'shipping_dimension': 'dbadmin', 'warehouse_dimension': 'dbadmin', 'inventory_fact': 'dbadmin', 'vmart_load_success': 'dbadmin'}
 
 sample_ml_model = "naive_house84_model"
 
 sample_oauth_name = "v_oauth"
-sample_projection_properties = {'ROS_Count': 264, 'projection_name': 'store_orders_fact_super', 'Projection_Type': 'is_super_projection', 'is_segmented': 'True', 'Segmentation_key': 'hash(store_orders_fact.product_key, store_orders_fact.product_version, store_orders_fact.store_key, store_orders_fact.vendor_key, store_orders_fact.employee_key, store_orders_fact.order_number, store_orders_fact.date_ordered, store_orders_fact.date_shipped)', 'Partition_Key': '2014-06-04', 'projection_size': '7553 KB', 'Partition_Size': '2640'}
+sample_projection_properties = {'text': 'Vertica physically stores table data in projections,             which are collections of table columns. Projections store data in a format that optimizes query execution             For more info on projections and corresponding properties check out the Vertica Docs: https://www.vertica.com/docs', 'properties': {'ROS_Count': '1', 'Projection_Type': 'is_super_projection', 'is_segmented': 'True', 'Segmentation_key': 'hash(product_dimension.product_key, product_dimension.product_version)', 'projection_size': '19 KB', 'Partition_Key': 'Not Available', 'Partition_Size': '0', 'Projection_Cached': 'False'}}
