@@ -128,12 +128,12 @@ class TIMESTAMP_WITH_PRECISION(TIMESTAMP):
 
 
 def TIMESTAMP_WITH_TIMEZONE(*args, **kwargs):
-    kwargs["timezone"] = False
+    kwargs["timezone"] = True
     return TIMESTAMP_WITH_PRECISION(*args, **kwargs)
 
 
 def TIME_WITH_TIMEZONE(*args, **kwargs):
-    kwargs["timezone"] = False
+    kwargs["timezone"] = True
     return TIME(*args, **kwargs)
 
 
