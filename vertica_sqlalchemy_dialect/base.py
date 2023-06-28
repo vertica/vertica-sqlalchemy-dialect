@@ -2026,6 +2026,7 @@ class VerticaDialect(default.DefaultDialect):
     
     @lru_cache(maxsize=None)
     def fetch_view_lineage(self, connection,schema) -> None:
+        
 
         view_upstream_lineage_query = sql.text(
             dedent(
@@ -2061,6 +2062,7 @@ class VerticaDialect(default.DefaultDialect):
             view (str): name of the view
 
         """
+        
                 
         view_lineage_map: Optional[Dict[str, List[Tuple[str, str, str]]]] = None
         
@@ -2084,7 +2086,7 @@ class VerticaDialect(default.DefaultDialect):
                 )
 
                 
-                return view_lineage_map
+            return view_lineage_map
 
         except Exception as e:
             import traceback
@@ -2201,7 +2203,7 @@ class VerticaDialect(default.DefaultDialect):
             view (str): name of the view
 
         """
-
+        
         projection_lineage_map: Optional[
             Dict[str, List[Tuple[str, str, str]]]
         ] = None
@@ -2210,6 +2212,8 @@ class VerticaDialect(default.DefaultDialect):
 
         try:
             projection_lineage_map = defaultdict(list)
+            # print(refrence_table)
+            # exit()
             for lineage in refrence_table:
                 downstream = f"{lineage['schemaname']}.{lineage['name']}"
 
@@ -2222,8 +2226,7 @@ class VerticaDialect(default.DefaultDialect):
                     (view_upstream, "[]", "[]")
                 )
 
-
-                return projection_lineage_map
+            return projection_lineage_map
 
         except Exception as e:
             self.warn(
