@@ -224,6 +224,7 @@ def test_get_projection_comment(vconn):
     assert pc == projection_comments
 
 
+
 def test_get_model_comment(vconn):
     mc = vconn[0].dialect.get_model_comment(vconn[1], model_name=sample.sample_ml_model, schema="public")
     assert mc["properties"]["used_by"] == "dbadmin"
@@ -247,9 +248,6 @@ def test_get_all_owners(vconn):
     table_owner = owner
     assert table_owner == "dbadmin"
     
-
-    
-    
 def test_get_all_view_columns(vconn):
     res = vconn[0].dialect.get_view_columns(connection=vconn[1],view = sample.sample_view,  schema="public")
     # Assert the no. of columns
@@ -259,7 +257,9 @@ def test_get_all_view_columns(vconn):
 
 
 def test_get_view_comment(vconn):
+
     res = vconn[0].dialect.get_view_comment(connection=vconn[1],view = sample.sample_view, schema="public")
+
     if res['properties'] is not None:
         has_comment = True
     else:
@@ -279,7 +279,9 @@ def test_get_projection_owner(vconn):
     assert table_owner == "dbadmin"
     
 def test_get_all_projection_columns(vconn):
+
     res = vconn[0].dialect.get_projection_columns(connection=vconn[1], projection='inventory_fact_super', schema="public")
+
     projection_name = 'inventory_fact_super'
 
 
