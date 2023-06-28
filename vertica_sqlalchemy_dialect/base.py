@@ -644,7 +644,7 @@ class VerticaDialect(default.DefaultDialect):
         
         table_properties = {
                 "create_time": filtered_properties[0]['create_time'],
-                "Table Size": filtered_properties[0]['table_size'],
+                "table_size": filtered_properties[0]['table_size'],
             }
 
         return {
