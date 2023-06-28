@@ -51,6 +51,8 @@ from sqlalchemy.types import (
     BLOB,
     TIMESTAMP,
     TIME,
+    VARBINARY,
+    BINARY,
 )
 from sqlalchemy.sql.sqltypes import TIME, TIMESTAMP, String
 from sqlalchemy.sql import sqltypes
@@ -78,23 +80,29 @@ ischema_names = {
     "REAL": REAL,
     "DOUBLE": DOUBLE_PRECISION,
     "TIMESTAMP": TIMESTAMP,
-    "TIMESTAMP WITH TIMEZONE": TIMESTAMP,
+    "TIMESTAMP WITH TIMEZONE": TIMESTAMP(timezone=True),
     "TIMESTAMPTZ": TIMESTAMP(timezone=True),
     "TIME": TIME,
-    "TIME WITH TIMEZONE": TIME,
+    "TIME WITH TIMEZONE": TIME(timezone=True),
     "TIMETZ": TIME(timezone=True),
     "INTERVAL": INTERVAL,
+    "INTERVAL HOUR TO SECOND":INTERVAL,
+    "INTERVAL HOUR TO MINUTE":INTERVAL,
+    "INTERVAL DAY TO SECOND":INTERVAL,
+    "INTERVAL YEAR TO MONTH":INTERVAL,
+    "DOUBLE PRECISION": DOUBLE_PRECISION,
     "DATE": DATE,
     "DATETIME": DATETIME,
     "SMALLDATETIME": DATETIME,
-    "BINARY": BLOB,
-    "VARBINARY": BLOB,
+    "BINARY": BINARY,
+    "VARBINARY": VARBINARY,
     "RAW": BLOB,
     "BYTEA": BYTEA,
     "BOOLEAN": BOOLEAN,
     "LONG VARBINARY": BLOB,
     "LONG VARCHAR": VARCHAR,
     "GEOMETRY": BLOB,
+    "GEOGRAPHY":BLOB
 }
 
 
@@ -106,25 +114,31 @@ class UUID(String):
 
 class TIMESTAMP_WITH_PRECISION(TIMESTAMP):
     """The SQL TIMESTAMP With Precision type.
+
     Since Vertica supports precision values for timestamp this allows ingestion
     of timestamp fields with precision values.
     PS: THIS DATA IS CURRENTLY UNUSED, IT JUST FIXES INGESTION PROBLEMS
     TODO: Should research the possibility of reflecting the precision in the schema
+
     """
 
     __visit_name__ = "TIMESTAMP"
 
     def __init__(self, timezone=False, precision=None):
         """Construct a new :class:`_types.TIMESTAMP_WITH_PRECISION`.
+
         :param timezone: boolean.  Indicates that the TIMESTAMP type should
          enable timezone support, if available on the target database.
          On a per-dialect basis is similar to "TIMESTAMP WITH TIMEZONE".
          If the target database does not support timezones, this flag is
          ignored.
         :param precision: integer.  Indicates the PRECISION field when provided
+
+
         """
         super(TIMESTAMP, self).__init__(timezone=timezone)
         self.precision = precision
+       
 
 
 def TIMESTAMP_WITH_TIMEZONE(*args, **kwargs):
@@ -269,18 +283,7 @@ class VerticaInspector(reflection.Inspector):
             self.bind, table, schema, info_cache=self.info_cache, **kw
         )
 
-    def get_all_columns(self, table, schema: Optional[str] = None, **kw: Any):
-        r"""Return all table columns names within a particular schema."""
-
-        return self.dialect.get_all_columns(
-            self.bind, table, schema, info_cache=self.info_cache, **kw
-        )
-
-    # def get_pk_constraint(self, schema=None, **kw):
-
-    #     return self.dialect.get_pk_constraint(
-    #         self.bind, schema, info_cache=self.info_cache, **kw
-    #     )
+   
 
     def get_table_comment(
         self, table: Optional[str] = None, schema: Optional[str] = None, **kw
@@ -859,13 +862,6 @@ class VerticaDialect(default.DefaultDialect):
             columns.append(column_info)
 
         return columns
-
-    def get_all_columns(self, connection, table, schema=None, **kw):
-        columns = self.fetch_table_comment(connection, schema)
-        table_columns = [
-            prop for prop in columns if prop["table_name"].lower() == table.lower()
-        ]
-        return table_columns
     
 
 
@@ -1783,58 +1779,12 @@ class VerticaDialect(default.DefaultDialect):
             },
         }
         
-    @reflection.cache
-    def get_columns(self, connection, table_name, schema=None, **kw):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                'schema': schema.lower()}
-        else:
-            schema_condition = "1"
-
-        s = sql.text(dedent("""
-            SELECT column_name, data_type, column_default, is_nullable
-            FROM v_catalog.columns
-            WHERE lower(table_name) = '%(table)s'
-            AND %(schema_condition)s
-            UNION ALL
-            SELECT column_name, data_type, '' as column_default, true as is_nullable
-            FROM v_catalog.view_columns
-            WHERE lower(table_name) = '%(table)s'
-            AND %(schema_condition)s
-            UNION ALL
-            SELECT projection_column_name,data_type,'' as column_default, true as is_nullable
-            FROM PROJECTION_COLUMNS
-            WHERE lower(projection_name) = '%(table)s'
-            AND %(schema_condition)s
-        """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
-
-        spk = sql.text(dedent("""
-            SELECT column_name
-            FROM v_catalog.primary_keys
-            WHERE lower(table_name) = '%(table)s'
-            AND constraint_type = 'p'
-            AND %(schema_condition)s
-        """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
-
-        pk_columns = [x[0] for x in connection.execute(spk)]
-        columns = []
-        for row in connection.execute(s):
-            name = row.column_name
-            dtype = row.data_type.lower()
-            primary_key = name in pk_columns
-            default = row.column_default
-            nullable = row.is_nullable
-
-            column_info = self._get_column_info(
-                name,
-                dtype,
-                default,
-                nullable,
-                schema,
-            )
-            column_info.update({'primary_key': primary_key})
-            columns.append(column_info)
-        return columns
+    def get_columns(self, connection, table, schema=None, **kw):
+        columns = self.fetch_table_comment(connection, schema)
+        table_columns = [
+            prop for prop in columns if prop["table_name"].lower() == table.lower()
+        ]
+        return table_columns
 
     ########################################################## new code ############################################################
 
