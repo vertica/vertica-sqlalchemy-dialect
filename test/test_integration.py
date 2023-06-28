@@ -130,7 +130,7 @@ def test_get_temp_view_names(vconn):
     assert sample.sample_view in res
 
 def test_get_columns(vconn):
-    res = vconn[0].dialect.get_columns(connection=vconn[1], table=sample.sample_table_list[25], schema="public")
+    res = vconn[0].dialect.get_columns(connection=vconn[1], table_name=sample.sample_table_list[25], schema="public")
     print(res)
     # Assert the no. of columns
     assert len(res)>0
