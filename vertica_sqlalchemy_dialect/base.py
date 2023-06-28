@@ -282,6 +282,13 @@ class VerticaInspector(reflection.Inspector):
         return self.dialect.get_table_owner(
             self.bind, table, schema, info_cache=self.info_cache, **kw
         )
+        
+    def get_all_columns(self, table, schema: Optional[str] = None, **kw: Any):
+        r"""Return all table columns names within a particular schema."""
+
+        return self.dialect.get_all_columns(
+            self.bind, table, schema, info_cache=self.info_cache, **kw
+        )
 
    
 
@@ -837,7 +844,7 @@ class VerticaDialect(default.DefaultDialect):
         return []
 
     @lru_cache(maxsize=None)
-    def fetch_table_comment(self, connection, schema):
+    def fetch_table_columns(self, connection, schema):
         s = sql.text(
             dedent(
                 """
@@ -1779,12 +1786,66 @@ class VerticaDialect(default.DefaultDialect):
             },
         }
         
-    def get_columns(self, connection, table, schema=None, **kw):
-        columns = self.fetch_table_comment(connection, schema)
+    def get_all_columns(self, connection, table, schema=None, **kw):
+        columns = self.fetch_table_columns(connection, schema)
         table_columns = [
             prop for prop in columns if prop["table_name"].lower() == table.lower()
         ]
         return table_columns
+    
+    @reflection.cache
+    def get_columns(self, connection, table_name, schema=None, **kw):
+        if schema is not None:
+            schema_condition = "lower(table_schema) = '%(schema)s'" % {
+                'schema': schema.lower()}
+        else:
+            schema_condition = "1"
+
+        s = sql.text(dedent("""
+            SELECT column_name, data_type, column_default, is_nullable
+            FROM v_catalog.columns
+            WHERE lower(table_name) = '%(table)s'
+            AND %(schema_condition)s
+            UNION ALL
+            SELECT column_name, data_type, '' as column_default, true as is_nullable
+            FROM v_catalog.view_columns
+            WHERE lower(table_name) = '%(table)s'
+            AND %(schema_condition)s
+            UNION ALL
+            SELECT projection_column_name,data_type,'' as column_default, true as is_nullable
+            FROM PROJECTION_COLUMNS
+            WHERE lower(projection_name) = '%(table)s'
+            AND %(schema_condition)s
+        """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
+
+        spk = sql.text(dedent("""
+            SELECT column_name
+            FROM v_catalog.primary_keys
+            WHERE lower(table_name) = '%(table)s'
+            AND constraint_type = 'p'
+            AND %(schema_condition)s
+        """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
+
+        pk_columns = [x[0] for x in connection.execute(spk)]
+        columns = []
+        for row in connection.execute(s):
+            name = row.column_name
+            dtype = row.data_type.lower()
+            primary_key = name in pk_columns
+            default = row.column_default
+            nullable = row.is_nullable
+
+            column_info = self._get_column_info(
+                name,
+                dtype,
+                default,
+                nullable,
+                table_name,
+                schema,
+            )
+            column_info.update({'primary_key': primary_key})
+            columns.append(column_info)
+        return columns
 
     ########################################################## new code ############################################################
 
