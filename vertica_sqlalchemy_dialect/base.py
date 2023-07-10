@@ -878,10 +878,7 @@ class VerticaDialect(default.DefaultDialect):
                 SELECT column_name, data_type, '' as column_default, true as is_nullable, lower(table_name) as table_name
                 FROM v_catalog.view_columns
                 where lower(table_schema) = '%(schema)s'
-                UNION ALL
-                SELECT projection_column_name,data_type,'' as column_default, true as is_nullable , lower(table_name) as table_name
-                FROM PROJECTION_COLUMNS
-                where lower(table_schema) = '%(schema)s'
+                
                 
             """
                 % {"schema": schema.lower()}
@@ -900,7 +897,7 @@ class VerticaDialect(default.DefaultDialect):
                 name, dtype, default, nullable, table_name, schema
             )
             columns.append(column_info)
-
+        # print("projection_columns",columns)
         return columns
     
 
