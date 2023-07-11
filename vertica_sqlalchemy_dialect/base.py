@@ -1838,52 +1838,6 @@ class VerticaDialect(default.DefaultDialect):
         ]
         return table_columns
 
-        # s = sql.text(dedent("""
-        #     SELECT column_name, data_type, column_default, is_nullable
-        #     FROM v_catalog.columns
-        #     WHERE lower(table_name) = '%(table)s'
-        #     AND %(schema_condition)s
-        #     UNION ALL
-        #     SELECT column_name, data_type, '' as column_default, true as is_nullable
-        #     FROM v_catalog.view_columns
-        #     WHERE lower(table_name) = '%(table)s'
-        #     AND %(schema_condition)s
-        #     UNION ALL
-        #     SELECT projection_column_name,data_type,'' as column_default, true as is_nullable
-        #     FROM PROJECTION_COLUMNS
-        #     WHERE lower(projection_name) = '%(table)s'
-        #     AND %(schema_condition)s
-        # """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
-
-        # spk = sql.text(dedent("""
-        #     SELECT column_name
-        #     FROM v_catalog.primary_keys
-        #     WHERE lower(table_name) = '%(table)s'
-        #     AND constraint_type = 'p'
-        #     AND %(schema_condition)s
-        # """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
-
-        # pk_columns = [x[0] for x in connection.execute(spk)]
-        # columns = []
-        # for row in connection.execute(s):
-        #     name = row.column_name
-        #     dtype = row.data_type.lower()
-        #     primary_key = name in pk_columns
-        #     default = row.column_default
-        #     nullable = row.is_nullable
-
-        #     column_info = self._get_column_info(
-        #         name,
-        #         dtype,
-        #         default,
-        #         nullable,
-        #         table_name,
-        #         schema,
-        #     )
-        #     column_info.update({'primary_key': primary_key})
-        #     columns.append(column_info)
-        # return columns
-
     ########################################################## new code ############################################################
 
     @lru_cache(maxsize=None)
