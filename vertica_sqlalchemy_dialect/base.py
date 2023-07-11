@@ -29,6 +29,7 @@ from textwrap import dedent
 from collections import defaultdict
 from functools import lru_cache
 import re
+import traceback
 
 
 
@@ -601,11 +602,17 @@ class VerticaDialect(default.DefaultDialect):
     
     @lru_cache(maxsize=None)
     def fetch_table_properties(self,connection, schema):
+        
+
         sct = sql.text(
             dedent(
                 """
                 SELECT create_time , table_name
                 FROM v_catalog.tables
+                where lower(table_schema) = '%(schema)s'
+                UNION ALL
+                SELECT create_time , table_name
+                FROM v_catalog.views
                 where lower(table_schema) = '%(schema)s'
                 """
                 % {"schema": schema.lower()}
@@ -624,6 +631,7 @@ class VerticaDialect(default.DefaultDialect):
         properties = []
         for row in connection.execute(sct):
             properties.append({"create_time": str(row[0]), "table_name": row[1]})
+            
         table_size_dict = {}
         for table_size in connection.execute(sts):
             if table_size[1] not in table_size_dict:
@@ -649,10 +657,25 @@ class VerticaDialect(default.DefaultDialect):
             if prop["table_name"].lower() == table_name.lower()
         ]
         
-        table_properties = {
-                "create_time": filtered_properties[0]['create_time'],
-                "table_size": filtered_properties[0]['table_size'],
-            }
+        
+        # below code tracks it function is called from a view or a table
+        # if called from table it return table_size , if called from view it only returns create_time .
+        
+        stack = traceback.extract_stack(limit=-10)
+        function_names = [frame.name for frame in stack]
+        called_from = function_names[-1]
+        
+        if called_from == "loop_tables":
+            
+            table_properties = {
+                    "create_time": filtered_properties[0]['create_time'],
+                    "table_size": filtered_properties[0]['table_size'],
+                }
+        else:
+            table_properties = {
+                    "create_time": filtered_properties[0]['create_time'],
+                }
+            
 
         return {
             "text": "References the properties of a native table in Vertica. \
@@ -851,11 +874,18 @@ class VerticaDialect(default.DefaultDialect):
                 SELECT column_name, data_type, '' as column_default, true as is_nullable, lower(table_name) as table_name
                 FROM v_catalog.columns
                 where lower(table_schema) = '%(schema)s'
+                UNION ALL
+                SELECT column_name, data_type, '' as column_default, true as is_nullable, lower(table_name) as table_name
+                FROM v_catalog.view_columns
+                where lower(table_schema) = '%(schema)s'
+                
+                
             """
                 % {"schema": schema.lower()}
             )
         )
-
+        
+        
         columns = []
         for row in connection.execute(s):
             name = row.column_name
@@ -867,7 +897,7 @@ class VerticaDialect(default.DefaultDialect):
                 name, dtype, default, nullable, table_name, schema
             )
             columns.append(column_info)
-
+        # print("projection_columns",columns)
         return columns
     
 
@@ -1800,52 +1830,13 @@ class VerticaDialect(default.DefaultDialect):
                 'schema': schema.lower()}
         else:
             schema_condition = "1"
-
-        s = sql.text(dedent("""
-            SELECT column_name, data_type, column_default, is_nullable
-            FROM v_catalog.columns
-            WHERE lower(table_name) = '%(table)s'
-            AND %(schema_condition)s
-            UNION ALL
-            SELECT column_name, data_type, '' as column_default, true as is_nullable
-            FROM v_catalog.view_columns
-            WHERE lower(table_name) = '%(table)s'
-            AND %(schema_condition)s
-            UNION ALL
-            SELECT projection_column_name,data_type,'' as column_default, true as is_nullable
-            FROM PROJECTION_COLUMNS
-            WHERE lower(projection_name) = '%(table)s'
-            AND %(schema_condition)s
-        """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
-
-        spk = sql.text(dedent("""
-            SELECT column_name
-            FROM v_catalog.primary_keys
-            WHERE lower(table_name) = '%(table)s'
-            AND constraint_type = 'p'
-            AND %(schema_condition)s
-        """ % {'table': table_name.lower(), 'schema_condition': schema_condition}))
-
-        pk_columns = [x[0] for x in connection.execute(spk)]
-        columns = []
-        for row in connection.execute(s):
-            name = row.column_name
-            dtype = row.data_type.lower()
-            primary_key = name in pk_columns
-            default = row.column_default
-            nullable = row.is_nullable
-
-            column_info = self._get_column_info(
-                name,
-                dtype,
-                default,
-                nullable,
-                table_name,
-                schema,
-            )
-            column_info.update({'primary_key': primary_key})
-            columns.append(column_info)
-        return columns
+            
+        columns = self.fetch_table_columns(connection, schema)
+        
+        table_columns = [
+            prop for prop in columns if prop["table_name"].lower() == table_name.lower()
+        ]
+        return table_columns
 
     ########################################################## new code ############################################################
 
