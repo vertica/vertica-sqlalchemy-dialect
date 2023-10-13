@@ -618,32 +618,46 @@ class VerticaDialect(default.DefaultDialect):
                 % {"schema": schema.lower()}
             )
         )
-        sts = sql.text(
+
+
+        table_size_query = sql.text(
             dedent(
                 """ 
-                SELECT used_bytes ,anchor_table_name
-                FROM v_monitor.column_storage
-                where lower(anchor_table_schema) = '%(schema)s'
+                select p.projection_schema, anchor_table_name, sum(used_bytes)
+                from projections p join storage_containers sc
+                on p.projection_name = sc.projection_name
+                and p.projection_schema = sc.schema_name
+                where lower(p.projection_schema)='%(schema)s'
+                group by 1,2;
                 """
                 % {"schema": schema.lower()}
             )
         )
+
         properties = []
         for row in connection.execute(sct):
             properties.append({"create_time": str(row[0]), "table_name": row[1]})
-            
+        
+        # Dictionary to store table sizes
         table_size_dict = {}
-        for table_size in connection.execute(sts):
-            if table_size[1] not in table_size_dict:
-                table_size_dict[table_size[1]] = table_size[0] / 1024
+
+        # Second loop to fetch table sizes
+        for table_size in connection.execute(table_size_query):
+            table_name, size = table_size[1], table_size[2]
+            TableSize = int(size / 1024)
+            if table_name not in table_size_dict:
+                table_size_dict[table_name] = str(TableSize) + " KB"
             else:
-                table_size_dict[table_size[1]] += table_size[0] / 1024
+                table_size_dict[table_name] += str(TableSize) + " KB"
+
+
         for a in properties:
             if a["table_name"] in table_size_dict:
-                a["table_size"] = str(int(table_size_dict[a["table_name"]])) + " KB"
+                a["table_size"] = table_size_dict[a["table_name"]]
             else:
                 a["table_size"] = "0 KB"
-            a["table_name"] = a["table_name"].lower()
+                
+
         return properties
 
     def get_table_comment(self, connection, table_name, schema=None, **kw):
@@ -661,20 +675,20 @@ class VerticaDialect(default.DefaultDialect):
         # below code tracks it function is called from a view or a table
         # if called from table it return table_size , if called from view it only returns create_time .
         
-        stack = traceback.extract_stack(limit=-10)
-        function_names = [frame.name for frame in stack]
-        called_from = function_names[-1]
+        # stack = traceback.extract_stack(limit=-10)
+        # function_names = [frame.name for frame in stack]
+        # called_from = function_names[-1]
         
-        if called_from == "loop_tables":
+        # if called_from == "loop_tables":
             
-            table_properties = {
-                    "create_time": filtered_properties[0]['create_time'],
-                    "table_size": filtered_properties[0]['table_size'],
-                }
-        else:
-            table_properties = {
-                    "create_time": filtered_properties[0]['create_time'],
-                }
+        table_properties = {
+            "create_time": filtered_properties[0]['create_time'],
+            "table_size": filtered_properties[0]['table_size'],
+           }
+        # else:
+        #     table_properties = {
+        #             "create_time": filtered_properties[0]['create_time'],
+        #         }
             
 
         return {
@@ -1488,14 +1502,27 @@ class VerticaDialect(default.DefaultDialect):
             )
         )
 
-        partition_num = sql.text(
+        # partition_num = sql.text(
+        #     dedent(
+        #         """
+        #         SELECT  COUNT(ros_id) as Partition_Size , LOWER(projection_name)
+        #         FROM v_monitor.partitions
+        #         WHERE table_schema = '%(schema)s'
+        #         GROUP BY projection_name
+        #     """
+        #         % {"schema": schema}
+        #     )
+        # )
+
+        num_of_partition = sql.text(
             dedent(
                 """
-                SELECT  COUNT(ros_id) as Partition_Size , LOWER(projection_name)
-                FROM v_monitor.partitions
-                WHERE table_schema = '%(schema)s'
-                GROUP BY projection_name
-            """
+                    SELECT  LOWER(projection_name) ,  count(partition_key) as Partition_Size
+                    FROM v_monitor.partitions WHERE lower(table_schema) = '%(schema)s'  
+                    group by 1;
+
+                
+                """
                 % {"schema": schema}
             )
         )
@@ -1580,10 +1607,13 @@ class VerticaDialect(default.DefaultDialect):
                 else:
                     a["projection_size"] = "0 KB"
 
-        for partition_number in connection.execute(partition_num):
+        for partition_number in connection.execute(num_of_partition):
+           
             for a in projection_comment:
-                if a["projection_name"].lower() == partition_number[1]:
-                    a["Partition_Size"] = str(partition_number["Partition_Size"])
+                if a["projection_name"].lower() == partition_number[0].lower():
+                    a["Partition_Size"] = str(partition_number[1])
+                   
+
 
         for projection_cached in connection.execute(projection_cache):
             for a in projection_comment:
@@ -1614,9 +1644,9 @@ class VerticaDialect(default.DefaultDialect):
                 projection_properties['Projection_Type']= "Not Available"
                 
             if 'is_segmented' in projection_comments[0]:
-                projection_properties['is_segmented'] = str(projection_comments[0]['is_segmented'])
+                projection_properties['Is_Segmented'] = str(projection_comments[0]['is_segmented'])
             else:
-                projection_properties['is_segmented'] = "Not Available"
+                projection_properties['Is_Segmented'] = "Not Available"
                 
             if 'Segmentation_key' in projection_comments[0]:
                 projection_properties['Segmentation_key'] = str(projection_comments[0]['Segmentation_key'])
@@ -1624,9 +1654,9 @@ class VerticaDialect(default.DefaultDialect):
                 projection_properties['Segmentation_key'] = "Not Available"
                 
             if 'projection_size' in projection_comments[0]:
-                projection_properties['projection_size'] = str(projection_comments[0]['projection_size'])
+                projection_properties['Projection_size'] = str(projection_comments[0]['projection_size'])
             else:
-                projection_properties['projection_size'] = "0 KB"
+                projection_properties['Projection_size'] = "0 KB"
                 
             if 'Partition_Key' in projection_comments[0]:
                 projection_properties['Partition_Key'] = str(projection_comments[0]['Partition_Key'])
@@ -1634,9 +1664,9 @@ class VerticaDialect(default.DefaultDialect):
                 projection_properties['Partition_Key'] = "Not Available"
                 
             if 'Partition_Size' in projection_comments[0]:
-                projection_properties['Partition_Size'] = str(projection_comments[0]['Partition_Size'])
+                projection_properties['Number_Of_Partitions'] = str(projection_comments[0]['Partition_Size'])
             else:
-                projection_properties['Partition_Size'] =  "0" 
+                projection_properties['Number_Of_Partitions'] =  "0" 
             
             if 'Projection_Cached' in projection_comments[0]:
                 projection_properties['Projection_Cached'] = str(projection_comments[0]['Projection_Cached'])
