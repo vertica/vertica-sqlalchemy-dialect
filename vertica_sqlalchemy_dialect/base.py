@@ -618,16 +618,6 @@ class VerticaDialect(default.DefaultDialect):
                 % {"schema": schema.lower()}
             )
         )
-        sts = sql.text(
-            dedent(
-                """ 
-                SELECT used_bytes ,anchor_table_name
-                FROM v_monitor.column_storage
-                where lower(anchor_table_schema) = '%(schema)s'
-                """
-                % {"schema": schema.lower()}
-            )
-        )
 
 
         table_size_query = sql.text(
@@ -654,11 +644,11 @@ class VerticaDialect(default.DefaultDialect):
         # Second loop to fetch table sizes
         for table_size in connection.execute(table_size_query):
             table_name, size = table_size[1], table_size[2]
-
+            TableSize = int(size / 1024)
             if table_name not in table_size_dict:
-                table_size_dict[table_name] = str(size) + " KB"
+                table_size_dict[table_name] = str(TableSize) + " KB"
             else:
-                table_size_dict[table_name] += str(size) + " KB"
+                table_size_dict[table_name] += str(TableSize) + " KB"
 
 
         for a in properties:
