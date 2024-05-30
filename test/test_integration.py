@@ -24,13 +24,13 @@ from . import sample_objects as sample
 
 @pytest.fixture(scope="module")
 def vconn():
-    engine = sa.create_engine('vertica+vertica_python://dbadmin:abc123@localhost:5433/VMart')
+    engine = sa.create_engine('vertica+vertica_python://dbadmin:vdb@10.20.73.210:5433/vertica_db')
     conn = engine.connect()
     try:     
         yield [engine, conn]
     except:
         print("Failed to connect to the database")
-    
+
     conn.close()
     engine.dispose()
 
@@ -294,7 +294,7 @@ def test_get_all_projection_columns(vconn):
 
 def test__populate_view_lineage(vconn):
     res = vconn[0].dialect._populate_view_lineage(connection=vconn[1], view=sample.sample_view ,schema="public")
-    upstream = "public.customer_dimension"
+    upstream = "VMart.public.customer_dimension"
     downstream = next(iter(res.keys()))    
     assert res[downstream][0][0] == upstream
     
