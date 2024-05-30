@@ -24,7 +24,7 @@ from . import sample_objects as sample
 
 @pytest.fixture(scope="module")
 def vconn():
-    engine = sa.create_engine('vertica+vertica_python://dbadmin:vdb@10.20.73.210:5433/vertica_db')
+    engine = sa.create_engine('vertica+vertica_python://dbadmin:abc123@localhost:5433/VMart')
     conn = engine.connect()
     try:     
         yield [engine, conn]
