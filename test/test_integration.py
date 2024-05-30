@@ -255,6 +255,7 @@ def test_get_all_view_columns(vconn):
     assert len(res)>0
     # Assert sample columns
     assert all(value["name"] in sample.sample_view_columns for value in res)
+    
 
 
 def test_get_view_comment(vconn):
