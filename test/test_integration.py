@@ -30,7 +30,7 @@ def vconn():
         yield [engine, conn]
     except:
         print("Failed to connect to the database")
-
+    
     conn.close()
     engine.dispose()
 
@@ -255,7 +255,6 @@ def test_get_all_view_columns(vconn):
     assert len(res)>0
     # Assert sample columns
     assert all(value["name"] in sample.sample_view_columns for value in res)
-    
 
 
 def test_get_view_comment(vconn):
@@ -295,7 +294,7 @@ def test_get_all_projection_columns(vconn):
 
 def test__populate_view_lineage(vconn):
     res = vconn[0].dialect._populate_view_lineage(connection=vconn[1], view=sample.sample_view ,schema="public")
-    upstream = "VMart.public.customer_dimension"
+    upstream = "public.customer_dimension"
     downstream = next(iter(res.keys()))    
     assert res[downstream][0][0] == upstream
     

@@ -761,7 +761,7 @@ class VerticaDialect(default.DefaultDialect):
         get_tables_sql = sql.text(
             dedent(
                 """
-            SELECT lower(table_name) as table_name
+            SELECT table_name
             FROM v_catalog.tables
             WHERE %(schema_condition)s
             ORDER BY table_schema, table_name
@@ -810,10 +810,10 @@ class VerticaDialect(default.DefaultDialect):
         get_views_sql = sql.text(
             dedent(
                 """
-            SELECT lower(table_name) as table_name
+            SELECT table_name
             FROM v_catalog.views
             WHERE %(schema_condition)s
-            ORDER BY table_schema, lower(table_name)
+            ORDER BY table_schema, table_name
         """
                 % {"schema_condition": schema_condition}
             )
@@ -847,7 +847,7 @@ class VerticaDialect(default.DefaultDialect):
         for data in connection.execute(view_def):
             definition.append({
                 "view_def": data['VIEW_DEFINITION'],
-                "table_name": data['table_name'].lower()
+                "table_name": data['table_name']
             })
 
         return definition
@@ -902,7 +902,7 @@ class VerticaDialect(default.DefaultDialect):
         
         columns = []
         for row in connection.execute(s):
-            name = row.column_name.lower()
+            name = row.column_name
             dtype = row.data_type.lower()
             default = row.column_default
             nullable = row.is_nullable
@@ -1928,7 +1928,7 @@ class VerticaDialect(default.DefaultDialect):
         columns = []
 
         for row in connection.execute(s):
-            name = row.column_name.lower()
+            name = row.column_name
             dtype = row.data_type.lower()
             default = row.column_default
             nullable = row.is_nullable
@@ -2052,7 +2052,7 @@ class VerticaDialect(default.DefaultDialect):
         view_upstream_lineage_query = sql.text(
             dedent(
                 """
-            select (select database_name from v_catalog.databases) database_name,table_name ,table_schema, reference_table_name ,reference_table_schema  from v_catalog.view_tables where table_schema = '%(schema)s' """
+            select table_name ,table_schema, reference_table_name ,reference_table_schema  from v_catalog.view_tables where table_schema = '%(schema)s' """
                 % {"schema": schema}
             )
         )
@@ -2061,8 +2061,7 @@ class VerticaDialect(default.DefaultDialect):
         for data in connection.execute(view_upstream_lineage_query):
             # refrence_table.append(data)
             refrence_table.append(
-                {   
-                    "database_name": data["database_name"],
+                {
                     "reference_table_name": data["reference_table_name"],
                     "reference_table_schema": data["reference_table_schema"],
                     "view_name": data["table_name"],
@@ -2095,9 +2094,9 @@ class VerticaDialect(default.DefaultDialect):
             for lineage in refrence_table:
                 
                 
-                downstream = f"{lineage['database_name']}.{lineage['table_schema']}.{lineage['view_name']}"
+                downstream = f"{lineage['table_schema']}.{lineage['view_name']}"
 
-                upstream = f"{lineage['database_name']}.{lineage['reference_table_schema']}.{lineage['reference_table_name']}"
+                upstream = f"{lineage['reference_table_schema']}.{lineage['reference_table_name']}"
 
                 view_upstream: str = upstream
                 view_name: str = downstream
