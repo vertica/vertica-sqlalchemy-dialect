@@ -294,7 +294,7 @@ def test_get_all_projection_columns(vconn):
 
 def test__populate_view_lineage(vconn):
     res = vconn[0].dialect._populate_view_lineage(connection=vconn[1], view=sample.sample_view ,schema="public")
-    upstream = "public.customer_dimension"
+    upstream = "VMart.public.customer_dimension"
     downstream = next(iter(res.keys()))    
     assert res[downstream][0][0] == upstream
     

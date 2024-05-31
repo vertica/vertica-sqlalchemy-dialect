@@ -130,7 +130,7 @@ sample_columns = [
     ]
 
 sample_view_columns = [
-    'SUM',
+    'sum_annual_income',
     'customer_state'
     
 ]

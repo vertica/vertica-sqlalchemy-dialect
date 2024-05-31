@@ -20,7 +20,7 @@ GRANT AUTHENTICATION v_oauth TO oauth_user;
 GRANT ALL ON SCHEMA PUBLIC TO oauth_user;
 
 -- Create a VIEW
-CREATE VIEW sampleview AS SELECT SUM(annual_income), customer_state
+CREATE VIEW sampleview AS SELECT SUM(annual_income) as sum_annual_income, customer_state
 FROM public.customer_dimension
 WHERE customer_key IN (SELECT customer_key FROM store.store_sales_fact)
 GROUP BY customer_state ORDER BY customer_state ASC;
