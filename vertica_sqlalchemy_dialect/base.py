@@ -885,7 +885,7 @@ class VerticaDialect(default.DefaultDialect):
         s = sql.text(
             dedent(
                 """
-                SELECT column_name, data_type, '' as column_default, true as is_nullable, lower(table_name) as table_name
+                SELECT column_name, data_type, '' as column_default, is_nullable, lower(table_name) as table_name
                 FROM v_catalog.columns
                 where lower(table_schema) = '%(schema)s'
                 UNION ALL
